@@ -1,8 +1,34 @@
 import { WebSocket, WebSocketServer } from "ws";
 
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+import { JWT_SECRET } from "./config.js";
+
+dotenv.config();
+
 const wss = new WebSocketServer({ port: 8080 });
 
-wss.on("connection", function connection(ws) {
+wss.on("connection", function connection(ws, request) {
+
+	const url = request.url; // e.g., "/?roomId=roomId123"
+	if(!url){
+		ws.close();
+		return;
+	}
+	const params = new URLSearchParams(url.split("?")[1]);
+	const token = params.get("token");
+	if(!token){
+		ws.close();
+		return;
+	}
+
+	const decoded = jwt.verify(token, JWT_SECRET);
+	
+	if(!decoded || typeof decoded === "string" || !decoded.userId){
+		ws.close();
+		return;
+	}
+
 	console.log("A new client connected!");
 	ws.on("error", console.error);
 
