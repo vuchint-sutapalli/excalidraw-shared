@@ -133,3 +133,44 @@ Learn more about the power of Turborepo:
 - [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
 - [Configuration Options](https://turborepo.com/docs/reference/configuration)
 - [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+
+steps followed
+
+Create Your Project Template
+Your CLI needs a "template" to copy. This will be a cleaned-up version of your current project.
+
+Create a template directory inside your new CLI package: packages/create-vuchint-repo/template.
+Copy the entire contents of your project root (my-turborepo) into this new template directory.
+Crucially, clean up the template:
+Delete all node_modules, .turbo, dist, and .next directories from the template.
+Delete the packages/create-vuchint-repo directory from inside the template (to avoid infinite recursion!).
+Rename template/.gitignore to template/gitignore. This is a common trick because npm will not publish a file named .gitignore. Our script will rename it back.
+Step 4: Install Dependencies
+Now, go back to your project root and run pnpm install. This will detect the new package and install its dependencies (fs-extra, prompts, etc.).
+
+bash
+pnpm install
+Step 5: Test Your CLI Locally
+Before publishing, you should test it on your machine.
+
+Build the CLI:
+bash
+pnpm --filter create-vuchint-repo build
+Link the package globally: This makes your create-vuchint-repo command available everywhere on your system, pointing to your local code.
+bash
+pnpm link --global ./packages/create-vuchint-repo
+Run your command: Navigate to a different directory (e.g., cd ..) and run your new command!
+bash
+create-vuchint-repo my-test-project
+This will create a new folder my-test-project with your entire monorepo structure ready to go.
+Step 6: Publish to npm
+Once you're happy with it, you can publish it to the npm registry.
+
+Log in to your npm account (create one if you don't have one):
+bash
+npm login
+Navigate into your CLI package and publish it. The --access public flag is needed for scoped packages if you're on a free npm plan. Your package isn't scoped, but it's good practice for public packages.
+bash
+cd packages/create-vuchint-repo
+pnpm publish --access public
+That's it! After publishing, anyone in the world (including you) can run npx create-vuchint-repo@latest to bootstrap a new project using your template.
