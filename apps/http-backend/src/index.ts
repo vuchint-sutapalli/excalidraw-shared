@@ -4,6 +4,8 @@ import authRouter from "./routes/auth.js";
 import { middleware } from "./middleware.js";
 import dotenv from "dotenv";
 import { CreateRoomSchema } from "@repo/common/types";
+import { prismaClient } from "@repo/db/client";
+
 dotenv.config();
 
 
@@ -25,14 +27,27 @@ app.use("/", authRouter)
 //move create-room endpoint to room router
 
 
-app.post("/room", middleware, (req, res) => {
+app.post("/room", middleware, async(req, res) => {
 	const parseResult = CreateRoomSchema.safeParse(req.body);
 	if (!parseResult.success) {
 		return res.status(400).json({ message: "Invalid room name" });
 	}
 
+	//@ts-ignore //TODO fix this properly later
+	const userId = req.userId
+	console.log("Creating room for user:", userId);
+	const { name } = parseResult.data;
+	console.log("Room name:", name);
+
+	const newRoom =  await prismaClient.room.create({
+		data: {
+			slug:name,
+			adminId: userId,
+		},
+	});
+
 	//db call to create a room
-	res.json({ roomId: "roomId123" });
+	res.json({ roomId: newRoom.id, slug: newRoom.slug });
 });
 
 

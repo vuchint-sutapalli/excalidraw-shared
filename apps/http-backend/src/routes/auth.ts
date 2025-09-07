@@ -44,7 +44,6 @@ router.post("/signup", async (req: Request, res: Response, next: NextFunction) =
                 email,
                 password: hashedPassword,
                 name,
-                photo: ""
             },
         });
 
