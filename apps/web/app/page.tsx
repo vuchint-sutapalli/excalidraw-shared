@@ -2,6 +2,17 @@ import Image, { type ImageProps } from "next/image";
 import { Button } from "@repo/ui/button";
 import styles from "./page.module.css";
 
+//integrate ws-client
+import { WebSocketClient } from "./ws-client";
+
+// Use the WebSocketClient component somewhere in your page
+// For example, you can add it below the main content or in a sidebar
+// <WebSocketClient />
+
+
+
+// Component to handle light and dark mode images
+
 type Props = Omit<ImageProps, "src"> & {
   srcLight: string;
   srcDark: string;
@@ -22,6 +33,7 @@ export default function Home() {
   return (
     <div className={styles.page}>
       <main className={styles.main}>
+        <WebSocketClient />
         <ThemeImage
           className={styles.logo}
           srcLight="turborepo-dark.svg"
