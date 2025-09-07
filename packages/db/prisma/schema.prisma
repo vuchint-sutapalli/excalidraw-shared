@@ -16,11 +16,11 @@ datasource db {
 
 //Create User ,Room and Chat models
 model User {
-  id       String @id @default(uuid())
+  id       String  @id @default(uuid())
   name     String
-  email    String @unique
+  email    String  @unique
   password String
-  photo    String
+  photo    String?
   rooms    Room[]
   chats    Chat[]
 }
