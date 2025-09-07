@@ -3,7 +3,7 @@ import express from "express";
 import authRouter from "./routes/auth.js";
 import { middleware } from "./middleware.js";
 import dotenv from "dotenv";
-
+import { CreateRoomSchema } from "@repo/common/types";
 dotenv.config();
 
 
@@ -26,6 +26,11 @@ app.use("/", authRouter)
 
 
 app.post("/room", middleware, (req, res) => {
+	const parseResult = CreateRoomSchema.safeParse(req.body);
+	if (!parseResult.success) {
+		return res.status(400).json({ message: "Invalid room name" });
+	}
+
 	//db call to create a room
 	res.json({ roomId: "roomId123" });
 });

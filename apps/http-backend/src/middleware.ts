@@ -1,8 +1,10 @@
 
 import { Request, Response, NextFunction } from "express";
 
-import  jwt from "jsonwebtoken";
-import { JWT_SECRET } from "./config.js";
+import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "@repo/backend-common/config";
+
+// import { JWT_SECRET } from "../../../packages/backend-common/config.js";
 // Example middleware that logs the request method and URL  
 export function middleware(req: Request, res: Response, next: NextFunction) {
 
