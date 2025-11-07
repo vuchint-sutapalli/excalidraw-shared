@@ -1,0 +1,41 @@
+/*
+  This file defines the core design tokens for the application.
+  These CSS Custom Properties are the single source of truth for colors,
+  fonts, and spacing, and are consumed by Tailwind CSS and other CSS files.
+*/
+@layer base {
+  :root {
+    /* === Brand & UI Colors === */
+    --color-primary: #1971c2; /* Excalidraw blue for primary actions and highlights */
+    --color-danger: #e03131; /* Excalidraw red for destructive actions */
+    --color-text-base: #1e1e1e; /* Excalidraw black for primary text */
+    --color-text-muted: #8e8e8e; /* For secondary text, hints, and placeholders */
+
+    /* === Surface & Background Colors === */
+    --color-surface: #ffffff; /* Main background for UI elements like toolbars */
+    --color-background: #f8f9fa; /* App background color */
+    --color-surface-active: #e7f5ff; /* Background for active/selected items */
+
+    /* === Border Colors === */
+    --color-border: #e9ecef; /* Default border color for UI elements */
+    --color-border-hover: #ced4da; /* Border color on hover */
+    --color-border-focus: var(--color-primary); /* Border color for focused elements */
+
+    /* === Font Sizes === */
+    --font-size-xs: 0.75rem; /* 12px */
+    --font-size-sm: 0.875rem; /* 14px */
+    --font-size-base: 1rem; /* 16px */
+
+    /* === Font Families === */
+    --font-family-sans: ui-sans-serif, system-ui, -apple-system,
+      BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+      "Noto Sans", sans-serif;
+    --font-family-handwriting: "virgil", sans-serif;
+
+    /* === Spacing & Sizing === */
+    --space-1: 0.25rem; /* 4px */
+    --space-2: 0.5rem; /* 8px */
+    --space-3: 0.75rem; /* 12px */
+    --space-4: 1rem; /* 16px */
+  }
+}

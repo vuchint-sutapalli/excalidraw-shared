@@ -1,0 +1,111 @@
+/* Main toolbar container */
+.toolbar {
+	position: fixed;
+	top: var(--space-4);
+	left: 50%;
+	width: fit-content;
+	transform: translateX(-50%);
+	display: flex;
+	align-items: center;
+	padding: var(--space-1);
+	background-color: var(--color-surface);
+	border-radius: var(--space-2);
+	box-shadow: 0 var(--space-1) var(--space-3) rgba(0, 0, 0, 0.1),
+		0 1px 3px rgba(0, 0, 0, 0.08);
+	z-index: 100;
+	gap: var(--space-1);
+}
+
+/* Groups of buttons */
+.toolbar-group,
+.toolbar-confirm-group {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+/* Base button styling */
+.toolbar-button {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 38px;
+	height: 38px;
+	border: none;
+	background-color: transparent;
+	border-radius: var(--space-1);
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+	color: var(--color-text-base);
+	font-size: var(--font-size-sm);
+	font-weight: 500;
+}
+
+/* Hover state for non-disabled buttons */
+.toolbar-button:hover:not(:disabled) {
+	background-color: var(--color-surface-active);
+	color: var(--color-text-base);
+}
+
+/* Active/selected tool state */
+.toolbar-button.active {
+	background-color: var(--color-surface-active);
+	color: var(--color-primary);
+}
+
+/* Disabled state */
+.toolbar-button:disabled {
+	cursor: not-allowed;
+	color: var(--color-text-muted);
+}
+
+/* Icon styling */
+.toolbar-button svg {
+	width: 20px;
+	height: 20px;
+}
+
+.confirmationText {
+	font-size: var(--font-size-sm);
+	color: var(--color-text-muted);
+	margin: 0 var(--space-2);
+}
+
+/* Keybinding indicator text */
+.keybinding-hint {
+	position: absolute;
+	bottom: var(--space-1);
+	right: var(--space-1);
+	font-size: 10px;
+	color: var(--color-text-muted);
+	padding: 0 var(--space-1);
+	line-height: 1;
+}
+
+/* Vertical separator line */
+.toolbar-separator {
+	width: 1px;
+	height: var(--space-4);
+	background-color: var(--color-border);
+	margin: 0 var(--space-1);
+}
+
+/* Confirmation state for destructive buttons */
+.toolbar-button.toolbar-button-danger {
+	background-color: var(--color-danger-light);
+	color: var(--color-danger);
+	width: auto;
+	padding: 0 var(--space-3);
+}
+
+.toolbar-button.toolbar-button-danger:hover:not(:disabled) {
+	background-color: var(--color-danger-light-hover);
+	color: var(--color-danger-dark);
+}
+
+/* Cancel button specific styling */
+.toolbar-button.toolbar-button-cancel {
+	width: auto;
+	padding: 0 var(--space-3);
+}

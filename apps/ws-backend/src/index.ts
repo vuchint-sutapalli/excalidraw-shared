@@ -1,49 +1,93 @@
 import { WebSocket, WebSocketServer } from "ws";
-
-import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-import { JWT_SECRET } from "@repo/backend-common/config";
-
-dotenv.config();
+import { v4 as uuidv4 } from "uuid";
+import { WebSocketWithID } from "./types.js";
+import { handleDisconnect } from "./roomManager.js";
+import { handleMessage } from "./messageHandler.js";
 
 const wss = new WebSocketServer({ port: 8080 });
 
-wss.on("connection", function connection(ws, request) {
+const HTTP_BACKEND_URL = "http://localhost:3001";
 
-	const url = request.url; // e.g., "/?roomId=roomId123"
-	if(!url){
+wss.on("connection", async function connection(ws: WebSocket, request) {
+	const url = request.url;
+	console.log(`New WebSocket connection attempt, ${url}`);
+
+	if (!url) {
+		console.log("No URL provided, closing ws connection");
 		ws.close();
 		return;
 	}
+
 	const params = new URLSearchParams(url.split("?")[1]);
-	const token = params.get("token");
-	if(!token){
+	const ticket = params.get("ticket");
+
+	if (!ticket) {
+		console.log("No ticket provided, closing ws connection");
 		ws.close();
 		return;
 	}
 
-	const decoded = jwt.verify(token, JWT_SECRET);
-	
-	if(!decoded || typeof decoded === "string" || !decoded.userId){
+	const wsWithId = ws as WebSocketWithID;
+	wsWithId.id = uuidv4();
+	// These will be set after ticket validation
+	(wsWithId as any).userId = null;
+	wsWithId.roomId = null;
+	(wsWithId as any).isAlive = true;
+
+	// Validate the ticket with the http-backend
+	let userId: string | null = null;
+	try {
+		const response = await fetch(
+			`${HTTP_BACKEND_URL}/internal/validate-ticket/${ticket}`
+		);
+		if (response.ok) {
+			const data = await response.json();
+			userId = data.userId;
+		} else {
+			console.log(`Ticket validation failed: ${response.statusText}`);
+		}
+	} catch (error) {
+		console.error("Error validating ticket:", error);
+	}
+
+	if (!userId) {
+		console.log("Invalid ticket, closing ws connection");
 		ws.close();
 		return;
 	}
+	wsWithId.userId = userId;
 
-	console.log("A new client connected!");
-	ws.on("error", console.error);
+	console.log(
+		`WebSocket connection established for user ${userId} with id ${wsWithId.id}`
+	);
 
-	ws.on("message", function message(data) {
-		console.log("received: %s", data);
+	ws.on("close", () => {
+		handleDisconnect(wsWithId);
+	});
 
-		// Broadcast the received message to all clients.
-		wss.clients.forEach(function each(client) {
-			if (client !== ws && client.readyState === WebSocket.OPEN) {
-				client.send(data.toString());
-			}
-		});
+	ws.on("pong", () => {
+		(wsWithId as any).isAlive = true;
+	});
+
+	ws.on("message", (data) => {
+		handleMessage(wsWithId, data);
 	});
 
 	ws.send("Welcome! You are connected.");
 });
+
+// Set up the heartbeat interval to detect and terminate dead connections.
+const interval = setInterval(() => {
+	wss.clients.forEach((ws) => {
+		const wsWithId = ws as any;
+
+		if (wsWithId.isAlive === false) {
+			return ws.terminate(); // Terminate dead connections
+		}
+
+		wsWithId.isAlive = false; // Assume it's dead until a pong is received
+		ws.ping(); // Send a ping
+	});
+}, 30000); // Ping every 30 seconds
 
 console.log("WebSocket server is running on ws://localhost:8080");

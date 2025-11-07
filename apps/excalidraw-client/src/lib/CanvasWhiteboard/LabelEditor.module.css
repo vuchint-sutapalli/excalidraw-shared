@@ -1,0 +1,24 @@
+.textarea {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  border: 1px dashed var(--color-primary);
+  background-color: rgba(230, 242, 255, 0.9); /* A slightly more opaque version of the active surface color */
+  color: var(--color-text-base);
+  padding: var(--space-1);
+  border-radius: var(--space-1);
+  resize: none;
+  text-align: center;
+  min-width: 40px;
+  outline: none;
+  font-family: var(--font-family-handwriting);
+  font-size: var(--font-size-base);
+  overflow: hidden;
+  line-height: 1.2;
+  white-space: pre-wrap; /* Allows text to wrap */
+}
+
+.textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(25, 113, 194, 0.2);
+}

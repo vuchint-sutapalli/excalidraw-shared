@@ -21,18 +21,25 @@ model User {
   email    String  @unique
   password String
   photo    String?
-  rooms    Room[]
+  rooms    Room[]  @relation("AdminOfRooms")
+  memberOf Room[]  @relation("MemberOfRooms")
   chats    Chat[]
 }
 
 model Room {
-  id        Int      @id @default(autoincrement())
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  adminId   String
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+  adminId     String
+  isStarred   Boolean  @default(false)
+  description String?  @default("")
+  tags        String[] @default([])
 
-  admin User   @relation(fields: [adminId], references: [id])
-  chats Chat[]
+  admin    User      @relation("AdminOfRooms", fields: [adminId], references: [id])
+  members  User[]    @relation("MemberOfRooms")
+  chats    Chat[]
+  shapes   Shape[]
+  elements Element[]
 }
 
 model Chat {
@@ -44,8 +51,37 @@ model Chat {
   user User @relation(fields: [userId], references: [id])
   room Room @relation(fields: [roomId], references: [id])
 
-  // createdAt DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  // @@index([roomId])
-  // @@index([userId])
+  @@index([roomId])
+  @@index([userId])
+}
+
+model Shape {
+  id   String @id @default(uuid())
+  type String // "rectangle", "circle"
+  x    Float
+  y    Float
+
+  // Rectangle properties
+  width  Float?
+  height Float?
+
+  // Circle properties
+  radius Float?
+
+  // Each shape belongs to a room
+  roomId Int
+  room   Room @relation(fields: [roomId], references: [id])
+
+  @@index([roomId])
+}
+
+model Element {
+  id     String @id
+  roomId Int
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  data   Json
+
+  @@index([roomId])
 }
