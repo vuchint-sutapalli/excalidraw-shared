@@ -236,6 +236,7 @@ export function RoomCard({
 					}}
 				>
 					<CanvasWhiteboard
+						onSaveToHistory={() => {}}
 						ref={whiteboardRef}
 						initialViewTransform={{ scale: 1, offsetX: 0, offsetY: 0 }}
 						controlledElements={elements}
@@ -297,7 +298,7 @@ export function RoomCard({
 										<ExternalLink className="h-4 w-4" />
 										Open in new tab
 									</button>
-									{navigator.share && (
+									{"share" in navigator && (
 										<button
 											onClick={handleShare}
 											className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md"

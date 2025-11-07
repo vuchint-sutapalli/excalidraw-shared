@@ -48,7 +48,7 @@ export async function getRoomFromServer(slug: string): Promise<RoomUserData> {
 	};
 }
 
-interface Shape {
+export interface Shape {
 	// Define the properties of a shape according to your application's requirements
 	id: string;
 	type: string;
@@ -58,6 +58,8 @@ interface Shape {
 	height?: number;
 	radius?: number;
 	roomId: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	data: any;
 }
 
 export async function fetchShapes(
@@ -72,8 +74,14 @@ export async function fetchShapes(
 	return response.data;
 }
 
-export async function getCurrentUser(): Promise<any> {
-	const response = await serverApiFetch<any>("/auth/me");
+interface CurrentUser {
+	email: string;
+	name: string;
+	userId: string;
+}
+
+export async function getCurrentUser(): Promise<CurrentUser> {
+	const response = await serverApiFetch<CurrentUser>("/auth/me");
 
 	if (response.error || !response.data) {
 		throw new Error(response.error || "Failed to fetch current user.");

@@ -10,6 +10,7 @@ interface Shape {
 	height?: number;
 	radius?: number;
 	roomId: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	data: any;
 }
 
@@ -36,7 +37,7 @@ export async function getWebSocketTicket(): Promise<string> {
 
 export async function createRoom(
 	roomName: string
-): Promise<{ roomId: string }> {
+): Promise<{ roomId: string; slug: string }> {
 	console.log(API_BASE_URL, roomName);
 
 	const response = await apiFetch(`${API_BASE_URL}/room`, {

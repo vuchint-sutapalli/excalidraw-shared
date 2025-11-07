@@ -1,4 +1,4 @@
-import type { Point, RectangleElement } from "./types";
+import type { DiamondElement, Point, RectangleElement } from "./types";
 
 /**
  * Rotates a point around an origin.
@@ -29,7 +29,9 @@ export const rotatePoint = (
  * @param rect The rectangle to normalize.
  * @returns A new rectangle with positive width and height.
  */
-export const normalizeRect = (rect: RectangleElement): RectangleElement => {
+export const normalizeRect = (
+	rect: RectangleElement | DiamondElement
+): RectangleElement | DiamondElement => {
 	const x = rect.width < 0 ? rect.x + rect.width : rect.x;
 	const y = rect.height < 0 ? rect.y + rect.height : rect.y;
 	const width = Math.abs(rect.width);

@@ -1,15 +1,12 @@
-import { useState, useCallback, useEffect, RefObject, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type {
-	AnnotationElement,
-	RemotePointer,
 	Element,
-	Action,
 	ElementType,
 	Point,
 	HandleType,
-	EraserPoint,
 	PencilElement,
 	WireElement,
+	AnnotationElement,
 } from "./types";
 import type { TextElement } from "./types";
 import {
@@ -21,7 +18,7 @@ import {
 	isElementIntersectingRect,
 	getHandlePoint,
 } from "./element";
-import { simplifyPath, normalizeRect, rotatePoint } from "./geometry";
+import { simplifyPath, rotatePoint } from "./geometry";
 import { generateId } from "./id";
 import { throttle } from "../index";
 import { HOVER_LENIENCY, MIN_SIZE_THRESHOLD } from "./constants";
@@ -116,6 +113,8 @@ const createElement = (
 				height: 32,
 				annotationState: "open",
 				fill: "#FF4136", // A default red color to make it visible
+				authorId: "", // Will be set later
+				authorName: "", // Will be set later
 				comments: [],
 			};
 		case "eraser":
@@ -171,7 +170,12 @@ const createElement = (
  * This includes drawing, selecting, moving, resizing, rotating, curving, and panning.
  * It functions as a state machine, transitioning between different `Action` states.
  */
-export const useInteractions = ({ onElementClick }) => {
+
+interface UseInteractionsProps {
+	onElementClick?: (element: Element) => void;
+}
+
+export const useInteractions = ({ onElementClick }: UseInteractionsProps) => {
 	const {
 		activeCanvasRef,
 		elements,
@@ -203,6 +207,8 @@ export const useInteractions = ({ onElementClick }) => {
 		setSelectionRect,
 		wireHoveredElement,
 		setWireHoveredElement,
+		currentUserId,
+		currentUserName,
 		selectedElements,
 		setSelectedElements,
 		selectedTool,
@@ -259,9 +265,7 @@ export const useInteractions = ({ onElementClick }) => {
 			case "pencil":
 			case "line":
 			case "wire":
-			case "rotation":
-				canvas.style.cursor = "crosshair";
-				break;
+
 			case "eraser":
 			case "laser":
 				canvas.style.cursor = "crosshair";
@@ -1239,11 +1243,12 @@ export const useInteractions = ({ onElementClick }) => {
 				// This is a click to place a new annotation.
 				// We create the element and immediately trigger the onElementClick
 				// callback, which will be handled by the parent to show the modal.
-				const newAnnotation = createElement(
-					"annotation",
-					getCanvasPos(e),
-					defaultStyles
-				);
+				const newAnnotation = {
+					...createElement("annotation", getCanvasPos(e), defaultStyles),
+					authorId: currentUserId || "unknown",
+					authorName: currentUserName || "Anonymous",
+				} as AnnotationElement;
+
 				onElementClick?.(newAnnotation);
 				setAction("none"); // Reset action immediately
 			}

@@ -21,7 +21,7 @@ import type {
 import { throttle } from "@/lib/index";
 
 import { STORAGE_KEY } from "./constants";
-import { drawElement } from "./useDrawing/drawingUtils";
+// import { drawElement } from "./useDrawing/drawingUtils";
 import { roundElementProperties, moveElement } from "./element";
 import { generateId } from "./id";
 import { tools as allToolbarTools } from "./Toolbar/toolbar";
@@ -29,7 +29,7 @@ import { WhiteboardContext } from "./WhiteboardContext";
 import { WhiteboardUI } from "./WhiteboardUI";
 
 import "./design-system.css";
-import { getCubicBezierControlPoints } from "./useDrawing/bezier";
+// import { getCubicBezierControlPoints } from "./useDrawing/bezier";
 import { exportToCanvas } from "./exportUtils";
 
 export interface CanvasWhiteboardProps {
@@ -43,7 +43,7 @@ export interface CanvasWhiteboardProps {
 	onElementsChange?: (elements: Element[]) => void;
 
 	// Viewport management
-	onElementClick: (element: Element) => void;
+	onElementClick?: (element: Element) => void;
 	onElementCreate?: (element: Element) => void;
 	onElementsUpdate?: (elements: Partial<Element>[]) => void;
 	onElementsDelete?: (elementIds: string[]) => void;
@@ -82,6 +82,7 @@ export interface CanvasWhiteboardProps {
 	tools?: ElementType[];
 	currentUserId?: string;
 	currentUserName?: string;
+	onSaveToHistory: () => void;
 }
 
 export interface CanvasWhiteboardRef {
@@ -129,6 +130,7 @@ const CanvasWhiteboard = forwardRef<CanvasWhiteboardRef, CanvasWhiteboardProps>(
 			tools: allowedTools,
 			currentUserId,
 			currentUserName,
+			onSaveToHistory,
 		},
 		ref
 	) => {
@@ -209,7 +211,7 @@ const CanvasWhiteboard = forwardRef<CanvasWhiteboardRef, CanvasWhiteboardProps>(
 		);
 		const [wireHoveredElement, setWireHoveredElement] = useState<{
 			element: Element;
-			handle: HandleType;
+			handle: HandleType | null;
 		} | null>(null);
 		const [editingElement, setEditingElement] = useState<Element | null>(null);
 		const [defaultStyles, setDefaultStyles] = useState<Partial<Element>>({
@@ -603,13 +605,20 @@ const CanvasWhiteboard = forwardRef<CanvasWhiteboardRef, CanvasWhiteboardProps>(
 			remotePointers: enableCursorTracking ? remotePointers : undefined,
 			inProgressStrokes,
 			inProgressHighlights,
-			onElementCreate: (...args) => onElementCreateRef.current?.(...args),
-			onElementsUpdate: (...args) => onElementsUpdateRef.current?.(...args),
-			onElementsDelete: (...args) => onElementsDeleteRef.current?.(...args),
+			// onElementCreate: (...args) => onElementCreateRef.current?.(...args),
+			// onElementsUpdate: (...args) => onElementsUpdateRef.current?.(...args),
+			// onElementsDelete: (...args) => onElementsDeleteRef.current?.(...args),
+			onElementCreate: (element: Element) =>
+				onElementCreateRef.current?.(element),
+			onElementsUpdate: (elements: Partial<Element>[]) =>
+				onElementsUpdateRef.current?.(elements),
+			onElementsDelete: (elementIds: string[]) =>
+				onElementsDeleteRef.current?.(elementIds),
 			onElementClick,
 			activeAnnotationId,
 			currentUserId,
 			currentUserName,
+			onSaveToHistory,
 		};
 
 		return (

@@ -1,6 +1,12 @@
 import AuthPage from "@/components/AuthPage";
+import { Suspense } from "react";
+
 function Signin() {
-	return <AuthPage mode="signin" />;
+	return (
+		<Suspense>
+			<AuthPage mode="signin" />
+		</Suspense>
+	);
 }
 
 export default Signin;

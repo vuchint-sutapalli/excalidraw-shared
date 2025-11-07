@@ -10,7 +10,7 @@ import React from "react";
 
 // They receive searchParams as a prop, which contains the URL query parameters.
 interface ClassroomPageProps {
-	searchParams: { [key: string]: string | string[] | undefined };
+	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 async function ClassRoom({ searchParams }: ClassroomPageProps) {

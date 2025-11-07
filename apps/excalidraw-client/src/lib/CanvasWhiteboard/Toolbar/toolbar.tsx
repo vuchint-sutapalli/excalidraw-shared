@@ -41,7 +41,7 @@ interface ToolbarProps {
 export const tools: {
 	name: ElementType;
 	label: string;
-	icon: JSX.Element;
+	icon: React.JSX.Element;
 	key?: string;
 }[] = [
 	{ name: "selection", label: "Select", icon: <SelectionIcon />, key: "s" },

@@ -4,8 +4,8 @@
 	"private": true,
 	"scripts": {
 		"preinstall": "npx only-allow pnpm",
-		"dev": "next dev",
-		"build": "next build",
+		"dev": "npx rimraf .next && next dev",
+		"build": "npx rimraf .next && next build",
 		"start": "next start",
 		"lint": "eslint"
 	},
@@ -31,6 +31,7 @@
 		"eslint": "^9",
 		"eslint-config-next": "15.5.3",
 		"tailwindcss": "^4",
-		"typescript": "^5"
+		"typescript": "^5",
+		"rimraf": "^6.0.1"
 	}
 }

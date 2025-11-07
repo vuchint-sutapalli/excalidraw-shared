@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { usePathname } from "next/navigation";
+// import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Video, Menu, LogOut, FileUp, FileDown } from "lucide-react";
+import { Video, Menu, LogOut } from "lucide-react";
 import { Button } from "@repo/shad-ui";
 
 export function Navbar() {
@@ -11,7 +11,7 @@ export function Navbar() {
 	const menuRef = useRef<HTMLDivElement>(null);
 	const buttonRef = useRef<HTMLButtonElement>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
-	const pathname = usePathname();
+	// const pathname = usePathname();
 
 	// Effect to focus the dropdown when it opens
 	useEffect(() => {

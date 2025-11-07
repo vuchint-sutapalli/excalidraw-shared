@@ -1,7 +1,5 @@
 "use client";
-import Link from "next/link";
-import { Button } from "@repo/shad-ui";
-import { Video } from "lucide-react";
+
 import { RoomActionCard } from "@/components/RoomActionCard";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";

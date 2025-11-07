@@ -1,4 +1,4 @@
-import type { Element } from "./types";
+import type { Element, AnnotationElement } from "./types";
 import { getCombinedElementBounds, getHandlePoint } from "./element";
 import { drawElement } from "./useDrawing/drawingUtils";
 import { getCubicBezierControlPoints } from "./useDrawing/bezier";
@@ -29,7 +29,8 @@ export const drawElementsOnCanvas = (
 		if (el.type === "annotation") {
 			// Temporarily mutate for rendering highlight. This is specific to the export function
 			// and won't affect the main canvas state.
-			(elementToDraw as any).isActivelySelected = activeAnnotationId === el.id;
+			(elementToDraw as AnnotationElement).isActivelySelected =
+				activeAnnotationId === el.id;
 		} else if (el.type === "wire") {
 			const startEl = elementsById.get(el.startElementId);
 			const endEl = elementsById.get(el.endElementId);

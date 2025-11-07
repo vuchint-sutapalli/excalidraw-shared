@@ -48,7 +48,7 @@ const StylebarComponent: React.FC<StylebarProps> = ({
 		prop: K
 	): Element[K] | undefined => {
 		if (isSelectionEmpty) {
-			return defaultStyles[prop];
+			return defaultStyles[prop] as Element[K] | undefined;
 		} else {
 			const firstElement = selectedElements[0];
 			if (!firstElement || !(prop in firstElement)) return undefined;

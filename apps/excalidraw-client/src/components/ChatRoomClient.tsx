@@ -23,9 +23,10 @@ import React, {
 } from "react";
 import type { ChangeEvent } from "react";
 import { handleExportToJson } from "@/lib/CanvasWhiteboard/exportUtils";
-import { Undo2, Redo2, FileUp, FileDown, LogOut, Save } from "lucide-react";
+import { Undo2, Redo2, FileUp, FileDown, Save } from "lucide-react";
 import { useSnackbar } from "./SnackbarProvider";
 // import { throttle } from "@/lib/CanvasWhiteboard/throttle";
+import { Shape } from "@/apis/room.server";
 
 function ChatRoomClient({
 	existingShapes,
@@ -34,7 +35,7 @@ function ChatRoomClient({
 	userName,
 	slug,
 }: {
-	existingShapes: { id: string; roomId: number; data: Element }[];
+	existingShapes: Shape[];
 	id: string;
 	userId: string;
 	userName: string;
@@ -49,7 +50,7 @@ function ChatRoomClient({
 		null
 	);
 	const loading = socketContext?.loading; // or set appropriately if loading is part of your context
-	const [isJoined, setIsJoined] = useState(false);
+	// const [isJoined, setIsJoined] = useState(false);
 
 	const [canvasElements, setCanvasElements] = useState<Element[]>(
 		existingShapes.map((shape) => shape.data) as Element[]
@@ -70,10 +71,10 @@ function ChatRoomClient({
 		Map<string, RemotePointer>
 	>(new Map());
 
-	const [messages, setMessages] = useState<{ user: string; text: string }[]>(
-		[]
-	);
-	const [newMessage, setNewMessage] = useState("");
+	// const [messages, setMessages] = useState<{ user: string; text: string }[]>(
+	// 	[]
+	// );
+	// const [newMessage, setNewMessage] = useState("");
 	const [editingAnnotation, setEditingAnnotation] =
 		useState<AnnotationElement | null>(null);
 
@@ -99,7 +100,7 @@ function ChatRoomClient({
 
 			switch (parsedData.type) {
 				case "joined_room":
-					setIsJoined(true);
+					// setIsJoined(true);
 					break;
 				case "chat":
 					console.log("Received chat message from server");
@@ -285,20 +286,20 @@ function ChatRoomClient({
 		return () => clearInterval(interval);
 	}, []);
 
-	const handleNewMessage = (e: React.FormEvent) => {
-		if (!socket || !id || loading) return;
-		e.preventDefault();
-		if (socket.readyState === WebSocket.OPEN) {
-			socket.send(
-				JSON.stringify({
-					type: "chat",
-					roomId: id,
-					message: newMessage,
-				})
-			);
-			setNewMessage("");
-		}
-	};
+	// const handleNewMessage = (e: React.FormEvent) => {
+	// 	if (!socket || !id || loading) return;
+	// 	e.preventDefault();
+	// 	if (socket.readyState === WebSocket.OPEN) {
+	// 		socket.send(
+	// 			JSON.stringify({
+	// 				type: "chat",
+	// 				roomId: id,
+	// 				message: newMessage,
+	// 			})
+	// 		);
+	// 		setNewMessage("");
+	// 	}
+	// };
 
 	const handleImportFromJson = (event: ChangeEvent<HTMLInputElement>) => {
 		console.log("importiiiiiiiiiiiig");
@@ -504,7 +505,7 @@ function ChatRoomClient({
 				const finalstate = prevElements.map((el) => {
 					const update = updatesMap.get(el.id);
 					// If an update exists for this element, merge it. Otherwise, return the original element.
-					return update ? { ...el, ...update } : el;
+					return update ? ({ ...el, ...update } as Element) : el;
 				});
 				console.log(finalstate);
 
@@ -602,7 +603,7 @@ function ChatRoomClient({
 			...editingAnnotation,
 			annotationState: newAnnotationState,
 		};
-		handleAnnotationUpdate(updatedAnnotation);
+		handleAnnotationUpdate(updatedAnnotation as AnnotationElement);
 	};
 
 	const handleAnnotationDelete = () => {

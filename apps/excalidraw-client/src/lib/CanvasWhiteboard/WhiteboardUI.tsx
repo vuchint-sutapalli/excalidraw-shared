@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState, useRef } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import type { Element, ElementType } from "./types";
 import { Toolbar } from "./Toolbar/toolbar";
 import { Stylebar } from "./Stylebar";
@@ -16,7 +16,7 @@ interface WhiteboardUIProps {
 	toolbarTools: {
 		name: ElementType;
 		label: string;
-		icon: JSX.Element;
+		icon: React.JSX.Element;
 		key?: string;
 	}[];
 	handleSetSelectedTool: (tool: ElementType) => void;
@@ -50,7 +50,6 @@ export const WhiteboardUI: React.FC<WhiteboardUIProps> = (props) => {
 		handleCopySelected,
 		toolbarRef,
 		onElementClick,
-		activeAnnotationId,
 		stylebarRef,
 
 		handleViewTransformChange,

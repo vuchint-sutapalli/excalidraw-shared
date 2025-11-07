@@ -13,7 +13,7 @@ import {
 	drawResizeHandles,
 } from "./drawingUtils";
 import { getCubicBezierControlPoints } from "./bezier";
-import { drawElementsOnCanvas } from "../exportUtils";
+// import { drawElementsOnCanvas } from "../exportUtils";
 
 /**
  * A hook that manages all rendering operations for the whiteboard.
@@ -346,7 +346,7 @@ export const useDrawing = () => {
 			!selectedIds.has(wireHoveredElement.element.id)
 		) {
 			activeCtx.save();
-			const { element, handle } = wireHoveredElement;
+			const { element } = wireHoveredElement;
 			// Apply rotation to the context before drawing handles, so they appear in the correct place.
 			const center = getElementCenter(element);
 			if (element.rotation && center) {

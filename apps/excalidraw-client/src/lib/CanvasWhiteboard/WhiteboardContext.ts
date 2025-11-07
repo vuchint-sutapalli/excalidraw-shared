@@ -28,7 +28,7 @@ interface WhiteboardContextType {
 	action: Action;
 	wireHoveredElement: {
 		element: Element;
-		handle: HandleType;
+		handle: HandleType | null;
 	} | null;
 	isSpacePressed: boolean;
 	isCtrlPressed: boolean;
@@ -63,7 +63,7 @@ interface WhiteboardContextType {
 		React.SetStateAction<RectangleElement | null>
 	>;
 	setWireHoveredElement: React.Dispatch<
-		React.SetStateAction<{ element: Element; handle: HandleType } | null>
+		React.SetStateAction<{ element: Element; handle: HandleType | null } | null>
 	>;
 	setIsSpacePressed: React.Dispatch<React.SetStateAction<boolean>>;
 	setIsCtrlPressed: React.Dispatch<React.SetStateAction<boolean>>;
@@ -81,8 +81,9 @@ interface WhiteboardContextType {
 	inProgressStrokes?: Element[];
 	inProgressHighlights?: Element[];
 
-	currentUserName: string;
-	currentUserId: string;
+	currentUserName: string | undefined;
+	currentUserId: string | undefined;
+	onSaveToHistory: () => void;
 }
 
 export const WhiteboardContext = createContext<WhiteboardContextType | null>(

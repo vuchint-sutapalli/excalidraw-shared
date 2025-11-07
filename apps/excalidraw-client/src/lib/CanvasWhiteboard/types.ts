@@ -43,22 +43,21 @@ export interface CircleElement extends BaseElement {
 	radius: number;
 }
 
-export interface ArrowElement extends LineElement {
+export type ArrowElement = Omit<LineElement, "type"> & {
 	type: "arrow";
-}
+};
 
-export interface WireElement extends ArrowElement {
+export type WireElement = Omit<ArrowElement, "type"> & {
 	type: "wire";
 	startElementId: string;
 	endElementId: string;
 	startHandle: HandleType;
 	endHandle: HandleType;
-	points?: Point[];
-}
+};
 
-export interface DiamondElement extends RectangleElement {
+export type DiamondElement = Omit<RectangleElement, "type"> & {
 	type: "diamond";
-}
+};
 
 // Define the structure for a pencil element
 export interface PencilElement extends BaseElement {
@@ -67,12 +66,12 @@ export interface PencilElement extends BaseElement {
 	isHighlighter?: boolean; // New property to identify highlighter strokes
 }
 
-export interface TextElement extends RectangleElement {
+export type TextElement = Omit<RectangleElement, "type"> & {
 	type: "text";
 	text: string;
 	fontSize: number;
 	fontFamily?: string;
-}
+};
 
 export interface Comment {
 	id: string;

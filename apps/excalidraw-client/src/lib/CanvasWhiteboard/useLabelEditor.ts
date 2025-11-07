@@ -10,7 +10,6 @@ import { useWhiteboard } from "./WhiteboardContext";
 export const useLabelEditor = () => {
 	const {
 		elements,
-		updateElements,
 		viewTransform,
 		activeCanvasRef,
 		editingElement,

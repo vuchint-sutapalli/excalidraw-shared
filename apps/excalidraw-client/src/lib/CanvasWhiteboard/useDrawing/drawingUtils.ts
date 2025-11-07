@@ -296,7 +296,7 @@ export const drawPencilElement = (
 	// If it's a highlighter, draw a thinner, lighter stroke on top
 	if (element.isHighlighter) {
 		// Reduce the line width for the inner stroke. A 50% reduction usually looks good.
-		ctx.lineWidth = element.strokeWidth / 2;
+		ctx.lineWidth = (element.strokeWidth ?? 2) / 2;
 		// Use a semi-transparent white for a softer inner glow.
 		ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
 		ctx.stroke();
@@ -430,7 +430,8 @@ export const drawElement = (
 		ctx.lineTo(x + width / 2, y + height);
 		ctx.lineTo(x, y + height / 2);
 		ctx.closePath();
-		ctx.fill(el.fillRule || "nonzero");
+		// ctx.fill(el.fillRule || "nonzero");
+		ctx.fill();
 		ctx.stroke();
 		if (el.label && !highlight) {
 			drawLabel(ctx, el);
@@ -521,7 +522,8 @@ export const drawElement = (
 	} else if (el.type === "circle") {
 		ctx.beginPath();
 		ctx.arc(el.x, el.y, el.radius, 0, 2 * Math.PI);
-		ctx.fill(el.fillRule || "nonzero");
+		// ctx.fill(el.fillRule || "nonzero");
+		ctx.fill();
 		ctx.stroke();
 		if (el.label && !highlight) {
 			drawLabel(ctx, el);

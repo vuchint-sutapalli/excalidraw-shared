@@ -1,7 +1,12 @@
 import AuthPage from "@/components/AuthPage";
+import { Suspense } from "react";
 
 function Signup() {
-	return <AuthPage mode="signup" />;
+	return (
+		<Suspense>
+			<AuthPage mode="signup" />
+		</Suspense>
+	);
 }
 
 export default Signup;

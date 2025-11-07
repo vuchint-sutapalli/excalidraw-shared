@@ -50,8 +50,12 @@ export default function AuthPage({ mode }: AuthPageProps) {
 				// You might want to show a success toast here instead of an alert
 				alert("Signup successful! Please sign in.");
 				router.push("/signin");
-			} catch (err: any) {
-				setError(err.message || "An unexpected error occurred during signup.");
+			} catch (err) {
+				if (err instanceof Error) {
+					setError(err.message);
+				} else {
+					setError("An unexpected error occurred during signup.");
+				}
 			} finally {
 				setIsLoading(false);
 			}
@@ -66,8 +70,12 @@ export default function AuthPage({ mode }: AuthPageProps) {
 				} else {
 					router.push("/dashboard");
 				}
-			} catch (err: any) {
-				setError(err.message || "An unexpected error occurred during signin.");
+			} catch (err) {
+				if (err instanceof Error) {
+					setError(err.message);
+				} else {
+					setError("An unexpected error occurred during signin.");
+				}
 			} finally {
 				setIsLoading(false);
 			}

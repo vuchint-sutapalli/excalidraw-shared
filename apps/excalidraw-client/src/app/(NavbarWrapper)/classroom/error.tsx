@@ -5,10 +5,8 @@ import { useEffect } from "react";
 
 export default function Error({
 	error,
-	reset,
 }: {
 	error: Error & { digest?: string };
-	reset: () => void;
 }) {
 	const router = useRouter();
 

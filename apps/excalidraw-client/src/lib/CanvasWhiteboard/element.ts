@@ -34,7 +34,7 @@ const getSharedDummyContext = () => {
 const measureText = (
 	text: string,
 	fontSize: number,
-	fontFamily: string
+	fontFamily?: string
 ): { width: number; height: number } => {
 	const dummyContext = getSharedDummyContext();
 	dummyContext.font = `${fontSize}px ${fontFamily || "'virgil', sans-serif"}`;
@@ -44,7 +44,7 @@ const measureText = (
 	return { width: Math.max(0, ...widths), height: lines.length * fontSize };
 };
 
-const COPY_HANDLE_OFFSET = -30; // Negative for above the element
+// const COPY_HANDLE_OFFSET = -30; // Negative for above the element
 const ROTATION_HANDLE_OFFSET = -55; // Even further above
 
 export const getHandles = (
@@ -79,7 +79,7 @@ export const getHandles = (
 		case "line":
 		case "arrow": {
 			const lineEl = el as ArrowElement;
-			const lineHandles = [
+			const lineHandles: { type: HandleType; x: number; y: number }[] = [
 				{ type: "start", x: lineEl.x, y: lineEl.y },
 				{ type: "end", x: lineEl.x2, y: lineEl.y2 },
 			];
@@ -199,6 +199,7 @@ const getPencilElementBounds = (
  * @param obj The object or array to process.
  * @param precision The number of decimal places to round to.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const roundObject = (obj: any, precision: number): any => {
 	if (obj === null || typeof obj !== "object") {
 		return obj;
@@ -208,6 +209,7 @@ const roundObject = (obj: any, precision: number): any => {
 		return obj.map((item) => roundObject(item, precision));
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const newObj: { [key: string]: any } = {};
 	for (const key in obj) {
 		if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -248,7 +250,7 @@ export const hitTestHandle = (
 		: pos;
 
 	const handles = getHandles(el);
-	for (let h of handles) {
+	for (const h of handles) {
 		// Use a larger hit area for icon-based handles and when explicit leniency is requested.
 		const isIconHandle = h.type === "rotation" || h.type === "curve";
 		const handleSize = beLinient || isIconHandle ? 24 : HANDLE_SIZE;
