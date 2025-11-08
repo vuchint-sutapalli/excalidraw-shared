@@ -6,7 +6,8 @@ import { handleMessage } from "./messageHandler.js";
 
 const wss = new WebSocketServer({ port: 8080 });
 
-const HTTP_BACKEND_URL = "http://localhost:3001";
+const HTTP_BACKEND_URL =
+	process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
 
 wss.on("connection", async function connection(ws: WebSocket, request) {
 	const url = request.url;
