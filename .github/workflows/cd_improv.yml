@@ -35,7 +35,12 @@ jobs:
       - name: Package build folder
         run: |
           cd apps/excalidraw-client
-          tar -czf ../../web_build.tar.gz .next package.json next.config.js public
+          echo "Current directory: $(pwd)"
+          echo "Files in current directory:"
+          ls -la
+          echo "Checking .next directory:"
+          ls -la .next || echo ".next not found"
+          tar -czf ../../web_build.tar.gz .next package.json next.config.mjs public
 
       - name: Validate SSH Key
         run: |
