@@ -109,6 +109,6 @@ jobs:
             echo "🔁 Restarting PM2 processes..."
             pm2 reload http-server
             pm2 reload ws-server
-            pm2 reload excalidraw-client
+            pm2 reload fe-server
 
             echo "✅ Deployment completed successfully!"
