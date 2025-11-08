@@ -26,8 +26,8 @@ jobs:
             git pull origin main
 
             # Install dependencies and build the project
-            pnpm install
-            pnpm run build
+            /home/vuchintbig/.nvm/versions/node/v24.11.0/bin/pnpm install
+            /home/vuchintbig/.nvm/versions/node/v24.11.0/bin/pnpm run build
 
             # Restart services using PM2
             pm2 restart all
