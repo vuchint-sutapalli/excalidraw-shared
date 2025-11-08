@@ -90,8 +90,17 @@ jobs:
             echo "📦 Installing dependencies..."
             pnpm install --frozen-lockfile
 
-            echo "🏗️ Building project..."
-            pnpm run build
+
+            echo "📦 Cleaning old .next folder before extraction..."
+            rm -rf apps/excalidraw-client/.next
+
+            echo "📦 Extracting new Next.js build..."
+            tar -xzf /home/vuchintbig/deploy_artifacts/web_build.tar.gz -C apps/excalidraw-client
+            echo "✅ Extraction complete!"
+
+            echo "🏗️ Building lightweight backend apps..."
+            cd apps/http-server && pnpm run build && cd ../..
+            cd apps/ws-server && pnpm run build && cd ../..
 
             echo "🧹 Cleaning old PM2 processes (if needed)..."
             pm2 save
