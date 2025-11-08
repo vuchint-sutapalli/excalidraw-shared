@@ -18,6 +18,7 @@ jobs:
           known_hosts: ${{ secrets.KNOWN_HOSTS }}
           script: |
             set -e # Exit immediately if a command exits with a non-zero status.
+            export PATH="/home/vuchintbig/.nvm/versions/node/v24.11.0/bin:$PATH"
 
             # Navigate to the project directory
             cd /home/vuchintbig/excalidraw-shared/
