@@ -1,0 +1,98 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy Monorepo to Staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Next.js app
+        run: |
+          cd apps/excalidraw-client
+          pnpm run build
+
+      - name: Package build folder
+        run: |
+          cd apps/excalidraw-client
+          tar -czf ../../web_build.tar.gz .next package.json next.config.js public
+
+      - name: Validate SSH Key
+        run: |
+          if [ -z "${{ secrets.SSH_KEY }}" ]; then
+            echo "❌ SSH key secret not found!"
+            exit 1
+          fi
+          echo "✅ SSH key is available."
+
+      - name: Setup SSH known hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Copy build artifact to VM
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: 98.70.42.118
+          username: vuchintbig
+          key: ${{ secrets.SSH_KEY }}
+          source: "web_build.tar.gz"
+          target: "/home/vuchintbig/deploy_artifacts/"
+
+      - name: Deploy via SSH (Appleboy)
+        uses: appleboy/ssh-action@v1.0.1
+        with:
+          host: 98.70.42.118
+          username: vuchintbig
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          timeout: 5m
+          script: |
+            set -euo pipefail
+
+            echo "=== 🚀 Starting Deployment on $(hostname) ==="
+            export PATH="/home/vuchintbig/.nvm/versions/node/v24.11.0/bin:$PATH"
+
+            cd /home/vuchintbig/excalidraw-shared || {
+              echo "❌ Directory not found"; exit 1;
+            }
+
+            echo "🔄 Pulling latest changes..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "📦 Installing dependencies..."
+            pnpm install --frozen-lockfile
+
+            echo "🏗️ Building project..."
+            pnpm run build
+
+            echo "🧹 Cleaning old PM2 processes (if needed)..."
+            pm2 save
+            pm2 list || true
+
+            echo "🔁 Restarting PM2 processes..."
+            pm2 reload all || pm2 restart all
+
+            echo "✅ Deployment completed successfully!"
