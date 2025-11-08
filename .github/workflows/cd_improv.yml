@@ -99,14 +99,16 @@ jobs:
             echo "✅ Extraction complete!"
 
             echo "🏗️ Building lightweight backend apps..."
-            cd apps/http-server && pnpm run build && cd ../..
-            cd apps/ws-server && pnpm run build && cd ../..
+            cd apps/http-backend && pnpm run build && cd ../..
+            cd apps/ws-backend && pnpm run build && cd ../..
 
             echo "🧹 Cleaning old PM2 processes (if needed)..."
             pm2 save
             pm2 list || true
 
             echo "🔁 Restarting PM2 processes..."
-            pm2 reload all || pm2 restart all
+            pm2 reload http-server
+            pm2 reload ws-server
+            pm2 reload excalidraw-client
 
             echo "✅ Deployment completed successfully!"
