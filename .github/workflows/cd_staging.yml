@@ -53,24 +53,24 @@ jobs:
       - name: Setup SSH known hosts
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          echo "${{ secrets.KNOWN_HOSTS_staging }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
       - name: Copy build artifact to VM
         uses: appleboy/scp-action@v0.1.4
         with:
-          host: 98.70.42.118
+          host: 20.244.41.51
           username: vuchintbig
-          key: ${{ secrets.SSH_KEY }}
+          key: ${{ secrets.SSH_KEY_staging }}
           source: "web_build.tar.gz"
           target: "/home/vuchintbig/deploy_artifacts/"
 
       - name: Deploy via SSH (Appleboy)
         uses: appleboy/ssh-action@v1.0.1
         with:
-          host: 98.70.42.118
+          host: 20.244.41.51
           username: vuchintbig
-          key: ${{ secrets.SSH_KEY }}
+          key: ${{ secrets.SSH_KEY_staging }}
           script_stop: true
           timeout: 5m
           script: |
