@@ -4,6 +4,12 @@ on:
   push:
     branches: [staging]
 
+env:
+  HOST: 20.244.41.51
+  USERNAME: vuchint
+  NEXT_PUBLIC_WS_URL: ws://20.244.41.51:8080
+  NEXT_PUBLIC_BACKEND_URL: http://20.244.41.51:3001
+
 jobs:
   deploy:
     name: Deploy Monorepo to Staging
@@ -28,12 +34,9 @@ jobs:
         run: pnpm install
 
       - name: Build Next.js app
-        env:
-          NEXT_PUBLIC_WS_URL: ws://20.244.41.51:8080
-          NEXT_PUBLIC_BACKEND_URL: http://20.244.41.51:3001
         run: |
           cd apps/excalidraw-client
-          NEXT_PUBLIC_WS_URL=ws://20.244.41.51:8080 NEXT_PUBLIC_BACKEND_URL=http://20.244.41.51:3001 pnpm run build
+          NEXT_PUBLIC_WS_URL=${{ env.NEXT_PUBLIC_WS_URL }} NEXT_PUBLIC_BACKEND_URL=${{ env.NEXT_PUBLIC_BACKEND_URL }}} pnpm run build
 
       - name: Package build folder
         run: |
@@ -62,17 +65,17 @@ jobs:
       - name: Copy build artifact to VM
         uses: appleboy/scp-action@v0.1.4
         with:
-          host: 20.244.41.51
-          username: vuchint
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}}}
           key: ${{ secrets.SSH_KEY_STAGING }}
           source: "web_build.tar.gz"
-          target: "/home/vuchint/deploy_artifacts/"
+          target: "/home/${{ env.USERNAME }}/deploy_artifacts/"
 
       - name: Deploy via SSH (Appleboy)
         uses: appleboy/ssh-action@v1.0.1
         with:
-          host: 20.244.41.51
-          username: vuchint
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}
           key: ${{ secrets.SSH_KEY_STAGING }}
           script_stop: true
           timeout: 5m
@@ -80,9 +83,9 @@ jobs:
             set -euo pipefail
 
             echo "=== 🚀 Starting Deployment on $(hostname) ==="
-            export PATH="/home/vuchint/.nvm/versions/node/v24.11.0/bin:$PATH"
+            export PATH="/home/${{ env.USERNAME }}/.nvm/versions/node/v24.11.0/bin:$PATH"
 
-            cd /home/vuchint/excalidraw-shared || {
+            cd /home/${{ env.USERNAME }}/excalidraw-shared || {
               echo "❌ Directory not found"; exit 1;
             }
 
@@ -97,7 +100,7 @@ jobs:
             rm -rf apps/excalidraw-client/.next
 
             echo "📦 Extracting new Next.js build..."
-            tar -xzf /home/vuchint/deploy_artifacts/web_build.tar.gz -C apps/excalidraw-client
+            tar -xzf /home/${{ env.USERNAME }}/deploy_artifacts/web_build.tar.gz -C apps/excalidraw-client
             echo "✅ Extraction complete!"
 
             echo "🏗️ Building lightweight backend apps..."

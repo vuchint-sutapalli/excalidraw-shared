@@ -4,6 +4,12 @@ on:
   push:
     branches: [production]
 
+env:
+  HOST: 98.70.42.118
+  USERNAME: vuchintbig
+  NEXT_PUBLIC_WS_URL: ws://98.70.42.118:8080
+  NEXT_PUBLIC_BACKEND_URL: http://98.70.42.118:3001
+
 jobs:
   build:
     name: Build & Package Artifact
@@ -28,12 +34,9 @@ jobs:
         run: pnpm install
 
       - name: 🏗️ Build Next.js App
-        env:
-          NEXT_PUBLIC_WS_URL: ws://98.70.42.118:8080
-          NEXT_PUBLIC_BACKEND_URL: http://98.70.42.118:3001
         run: |
           cd apps/excalidraw-client
-          NEXT_PUBLIC_WS_URL=ws://98.70.42.118:8080 NEXT_PUBLIC_BACKEND_URL=http://98.70.42.118:3001 pnpm run build
+          NEXT_PUBLIC_WS_URL=${{ env.NEXT_PUBLIC_WS_URL }} NEXT_PUBLIC_BACKEND_URL=${{ env.NEXT_PUBLIC_BACKEND_URL }}} pnpm run build
 
       - name: 📦 Package build artifact
         run: |
@@ -80,26 +83,26 @@ jobs:
       - name: Copy build artifact to VM
         uses: appleboy/scp-action@v0.1.4
         with:
-          host: 98.70.42.118
-          username: vuchintbig
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           source: "web_build.tar.gz"
-          target: "/home/vuchintbig/deploy_artifacts/"
+          target: "/home/${{ env.USERNAME }}/deploy_artifacts/"
 
       - name: 🚀 Deploy on VM
         uses: appleboy/ssh-action@v1.0.1
         with:
-          host: 98.70.42.118
-          username: vuchintbig
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script_stop: true
           timeout: 5m
           script: |
             set -euo pipefail
             echo "=== 🚀 Starting Deployment on $(hostname) ==="
-            export PATH="/home/vuchintbig/.nvm/versions/node/v24.11.0/bin:$PATH"
+            export PATH="/home/${{ env.USERNAME }}/.nvm/versions/node/v24.11.0/bin:$PATH"
 
-            cd /home/vuchintbig/excalidraw-shared || { echo "❌ Directory not found"; exit 1; }
+            cd /home/${{ env.USERNAME }}/excalidraw-shared || { echo "❌ Directory not found"; exit 1; }
 
             echo "🔄 Pulling latest changes..."
             git fetch origin production
@@ -112,7 +115,7 @@ jobs:
             rm -rf apps/excalidraw-client/.next
 
             echo "📦 Extracting new Next.js build..."
-            tar -xzf /home/vuchintbig/deploy_artifacts/web_build.tar.gz -C apps/excalidraw-client
+            tar -xzf /home/${{ env.USERNAME }}/deploy_artifacts/web_build.tar.gz -C apps/excalidraw-client
             echo "✅ Extraction complete!"
 
             echo "🏗️ Building lightweight backend apps..."
