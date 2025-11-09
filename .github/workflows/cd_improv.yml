@@ -90,7 +90,6 @@ jobs:
             echo "📦 Installing dependencies..."
             pnpm install --frozen-lockfile
 
-
             echo "📦 Cleaning old .next folder before extraction..."
             rm -rf apps/excalidraw-client/.next
 
@@ -102,13 +101,9 @@ jobs:
             cd apps/http-backend && pnpm run build && cd ../..
             cd apps/ws-backend && pnpm run build && cd ../..
 
-            echo "🧹 Cleaning old PM2 processes (if needed)..."
-            pm2 save
-            pm2 list || true
-
             echo "🔁 Restarting PM2 processes..."
-            pm2 reload http-server
-            pm2 reload ws-server
-            pm2 reload fe-server
+            pm2 reload http-server || pm2 start apps/http-backend/dist/index.js --name http-server
+            pm2 reload ws-server || pm2 start apps/ws-backend/dist/index.js --name ws-server
+            pm2 reload fe-server || pm2 start "pnpm --dir apps/excalidraw-client start" --name fe-server
 
             echo "✅ Deployment completed successfully!"
