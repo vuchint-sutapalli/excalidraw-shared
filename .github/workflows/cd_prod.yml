@@ -7,8 +7,8 @@ on:
 env:
   HOST: 98.70.42.118
   USERNAME: vuchintbig
-  NEXT_PUBLIC_WS_URL: wss://98.70.42.118:8080
-  NEXT_PUBLIC_BACKEND_URL: https://98.70.42.118:3001
+  NEXT_PUBLIC_WS_URL: wss://prod.ws.slategpt.app
+  NEXT_PUBLIC_BACKEND_URL: https://prod.api.slategpt.app
 
 jobs:
   build:
@@ -36,7 +36,7 @@ jobs:
       - name: 🏗️ Build Next.js App
         run: |
           cd apps/excalidraw-client
-          NEXT_PUBLIC_WS_URL=${{ env.NEXT_PUBLIC_WS_URL }} NEXT_PUBLIC_BACKEND_URL=${{ env.NEXT_PUBLIC_BACKEND_URL }}} pnpm run build
+          NEXT_PUBLIC_WS_URL=${{ env.NEXT_PUBLIC_WS_URL }} NEXT_PUBLIC_BACKEND_URL=${{ env.NEXT_PUBLIC_BACKEND_URL }} pnpm run build
 
       - name: 📦 Package build artifact
         run: |
