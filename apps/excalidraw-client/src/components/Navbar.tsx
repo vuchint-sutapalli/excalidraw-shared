@@ -80,7 +80,7 @@ export function Navbar() {
 							<Video className="w-5 h-5 text-white" />
 						</div>
 						<span className="font-bold text-lg text-slate-800">
-							VirtualClassStaging
+							VirtualClassProduction
 						</span>
 					</Link>
 				</div>
