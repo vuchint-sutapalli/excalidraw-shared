@@ -91,4 +91,4 @@ const interval = setInterval(() => {
 	});
 }, 30000); // Ping every 30 seconds
 
-console.log("WebSocket server is running on ws://localhost:8080");
+console.log("WebSocket server is running on port 8080");
