@@ -1,0 +1,125 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [production]
+
+jobs:
+  build:
+    name: Build & Package Artifact
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧾 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: 📦 Install dependencies
+        run: pnpm install
+
+      - name: 🏗️ Build Next.js App
+        run: |
+          cd apps/excalidraw-client
+          pnpm run build
+
+      - name: 📦 Package build artifact
+        run: |
+          cd apps/excalidraw-client
+          echo "Packaging build output..."
+          tar -czf ../../web_build.tar.gz .next package.json next.config.mjs public
+          echo "✅ Artifact created at ../../web_build.tar.gz"
+
+      - name: 🧾 Verify build artifact
+        run: ls -lh web_build.tar.gz
+
+      - name: 💾 Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web_build
+          path: web_build.tar.gz
+
+  deploy:
+    name: Deploy to Production VM
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: 💾 Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web_build
+          path: .
+
+      - name: Validate SSH Key
+        run: |
+          if [ -z "${{ secrets.SSH_KEY }}" ]; then
+            echo "❌ SSH key secret not found!"
+            exit 1
+          fi
+          echo "✅ SSH key is available."
+
+      - name: Setup SSH known hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Copy build artifact to VM
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: 98.70.42.118
+          username: vuchintbig
+          key: ${{ secrets.SSH_KEY }}
+          source: "web_build.tar.gz"
+          target: "/home/vuchintbig/deploy_artifacts/"
+
+      - name: 🚀 Deploy on VM
+        uses: appleboy/ssh-action@v1.0.1
+        with:
+          host: 98.70.42.118
+          username: vuchintbig
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          timeout: 5m
+          script: |
+            set -euo pipefail
+            echo "=== 🚀 Starting Deployment on $(hostname) ==="
+            export PATH="/home/vuchintbig/.nvm/versions/node/v24.11.0/bin:$PATH"
+
+            cd /home/vuchintbig/excalidraw-shared || { echo "❌ Directory not found"; exit 1; }
+
+            echo "🔄 Pulling latest changes..."
+            git fetch origin production
+            git reset --hard origin/production
+
+            echo "📦 Installing dependencies..."
+            pnpm install --frozen-lockfile
+
+            echo "🧹 Cleaning old .next build..."
+            rm -rf apps/excalidraw-client/.next
+
+            echo "📦 Extracting new Next.js build..."
+            tar -xzf /home/vuchintbig/deploy_artifacts/web_build.tar.gz -C apps/excalidraw-client
+            echo "✅ Extraction complete!"
+
+            echo "🏗️ Building lightweight backend apps..."
+            cd apps/http-backend && pnpm run build && cd ../..
+            cd apps/ws-backend && pnpm run build && cd ../..
+
+            echo "🔁 Restarting PM2 processes..."
+            pm2 reload http-server || pm2 start apps/http-backend/dist/index.js --name http-server
+            pm2 reload ws-server || pm2 start apps/ws-backend/dist/index.js --name ws-server
+            pm2 reload fe-server || pm2 start "pnpm --dir apps/excalidraw-client start" --name fe-server
+
+            pm2 save
+            echo "✅ Deployment completed successfully!"
