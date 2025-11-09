@@ -28,6 +28,9 @@ jobs:
         run: pnpm install
 
       - name: Build Next.js app
+        env:
+          NEXT_PUBLIC_WS_URL: ws://20.244.41.51:8080
+          NEXT_PUBLIC_BACKEND_URL: http://20.244.41.51:3001
         run: |
           cd apps/excalidraw-client
           pnpm run build
