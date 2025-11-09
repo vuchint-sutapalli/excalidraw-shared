@@ -44,7 +44,7 @@ jobs:
 
       - name: Validate SSH Key
         run: |
-          if [ -z "${{ secrets.SSH_KEY }}" ]; then
+          if [ -z "${{ secrets.SSH_KEY_STAGING }}" ]; then
             echo "❌ SSH key secret not found!"
             exit 1
           fi
@@ -53,7 +53,7 @@ jobs:
       - name: Setup SSH known hosts
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.KNOWN_HOSTS_staging }}" > ~/.ssh/known_hosts
+          echo "${{ secrets.KNOWN_HOSTS_STAGING }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
       - name: Copy build artifact to VM
@@ -61,7 +61,7 @@ jobs:
         with:
           host: 20.244.41.51
           username: vuchintbig
-          key: ${{ secrets.SSH_KEY_staging }}
+          key: ${{ secrets.SSH_KEY_STAGING }}
           source: "web_build.tar.gz"
           target: "/home/vuchintbig/deploy_artifacts/"
 
@@ -70,7 +70,7 @@ jobs:
         with:
           host: 20.244.41.51
           username: vuchintbig
-          key: ${{ secrets.SSH_KEY_staging }}
+          key: ${{ secrets.SSH_KEY_STAGING }}
           script_stop: true
           timeout: 5m
           script: |
