@@ -28,6 +28,7 @@ export default function Home() {
 	// Add a class to the body to prevent scrolling when in the classroom
 	useEffect(() => {
 		document.body.classList.add("has-scroll");
+		document.title = "Dashboard";
 
 		// Cleanup function to remove the class when the component unmounts
 		return () => {
