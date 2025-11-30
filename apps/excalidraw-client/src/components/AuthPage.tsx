@@ -82,6 +82,25 @@ export default function AuthPage({ mode }: AuthPageProps) {
 		}
 	};
 
+	const handleGuestSignIn = async () => {
+		setError(null);
+		setIsLoading(true);
+
+		try {
+			await signin("test@gmail.com", "testtest");
+
+			router.push("/dashboard");
+		} catch (err) {
+			if (err instanceof Error) {
+				setError(err.message);
+			} else {
+				setError("An unexpected error occurred during guest signin.");
+			}
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
 	const pageConfig = {
 		signin: {
 			title: "Welcome Back",
@@ -106,11 +125,11 @@ export default function AuthPage({ mode }: AuthPageProps) {
 	const config = pageConfig[mode];
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+		<div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
 			<div className="w-full max-w-md">
 				{/* Logo */}
 				<div className="flex items-center justify-center mb-8">
-					<div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+					<div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
 						<Video className="w-6 h-6 text-white" />
 					</div>
 					<span className="ml-3 text-2xl font-bold text-gray-900">
@@ -225,12 +244,32 @@ export default function AuthPage({ mode }: AuthPageProps) {
 							)}
 							<Button
 								type="submit"
-								className="w-full h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+								className="w-full h-11 bg-gray-900 hover:bg-black text-white"
 								disabled={isLoading}
 							>
 								{isLoading ? config.loadingText : config.buttonText}
 							</Button>
 						</form>
+
+						{/* Guest access only on Sign In */}
+						{!isSignUp && (
+							<div className="pt-2">
+								<div className="flex items-center my-4">
+									<span className="flex-1 border-t border-gray-200" />
+									<span className="px-2 text-xs text-gray-400">or</span>
+									<span className="flex-1 border-t border-gray-200" />
+								</div>
+								<Button
+									type="button"
+									variant="outline"
+									className="w-full h-11 border cursor-pointer border-gray-300 text-gray-700 hover:bg-gray-50"
+									onClick={handleGuestSignIn}
+									disabled={isLoading}
+								>
+									Continue as Guest
+								</Button>
+							</div>
+						)}
 
 						<div className="text-center pt-4 border-t border-gray-200">
 							<p className="text-sm text-gray-600">
