@@ -140,6 +140,48 @@ router.delete("/:slug/leave", async (req: Request, res: Response) => {
 	}
 });
 
+router.delete("/:slug", async (req: Request, res: Response) => {
+	const slug = req.params.slug;
+	const userId = req.userId; // from auth middleware
+
+	if (!slug) {
+		return res.status(400).json({ message: "Slug is required" });
+	}
+
+	try {
+		// First, find the room to verify the admin
+		const room = await prismaClient.room.findUnique({
+			where: { slug: slug },
+			select: { adminId: true }, // Only need the adminId for verification
+		});
+
+		if (!room) {
+			return res.status(404).json({ message: "Room not found" });
+		}
+
+		// Check if the user making the request is the admin of the room
+		if (room.adminId !== userId) {
+			return res
+				.status(403)
+				.json({ message: "You are not authorized to delete this room" });
+		}
+
+		// If authorized, delete the room
+		await prismaClient.room.delete({
+			where: { slug: slug },
+		});
+
+		res
+			.status(200)
+			.json({
+				message: "Room and all its contents have been deleted successfully.",
+			});
+	} catch (error) {
+		console.error("Error deleting room:", error);
+		res.status(500).json({ message: "Failed to delete the room." });
+	}
+});
+
 router.post("/", async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const parseResult = CreateRoomSchema.safeParse(req.body);

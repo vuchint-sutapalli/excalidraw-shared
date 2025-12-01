@@ -57,6 +57,25 @@ export async function createRoom(
 	return data;
 }
 
+export async function deleteRoom(slug: string): Promise<{ message: string }> {
+	if (!slug) {
+		throw new Error("Slug is required");
+	}
+	const reponse = await apiFetch(`${API_BASE_URL}/room/${slug}`, {
+		method: "DELETE",
+	});
+	const data = await reponse.json();
+	if (!reponse.ok) {
+		if (data.errors) {
+			const firstErrorField = Object.keys(data.errors)[0];
+			const firstErrorMessage = data.errors[firstErrorField]?.[0];
+			throw new Error(firstErrorMessage || "Room deletion failed.");
+		}
+		throw new Error(data.message || "Room deletion failed.");
+	}
+	return data;
+}
+
 export async function editRoomMetaData(
 	slug: string,
 	metadata: {

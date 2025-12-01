@@ -49,7 +49,7 @@ model Chat {
   roomId  Int
 
   user User @relation(fields: [userId], references: [id])
-  room Room @relation(fields: [roomId], references: [id])
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -72,7 +72,7 @@ model Shape {
 
   // Each shape belongs to a room
   roomId Int
-  room   Room @relation(fields: [roomId], references: [id])
+  room   Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@index([roomId])
 }
