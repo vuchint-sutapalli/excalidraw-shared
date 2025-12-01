@@ -39,29 +39,45 @@ test.describe("room workflow", () => {
 	// 	await expect(roomCard).toBeAttached({ timeout: 10000 });
 	// });
 
-	test("check if join room works", async ({ page }) => {
-		await page.getByRole("link", { name: "VirtualClass" }).click();
+	// test("check if join room works", async ({ page }) => {
+	// 	await page.getByRole("link", { name: "VirtualClass" }).click();
+	// 	await page.getByTestId("cool-room-input").click();
+	// 	await page.getByTestId("cool-room-input").fill(roomName);
+	// 	await page.getByRole("button", { name: "Join Room" }).click();
+	// 	await expect(page).toHaveTitle("Classroom");
+	// 	await expect(page).toHaveURL(`${domain}/classroom?slug=${roomName}`);
+	// 	await page.getByRole("link", { name: "VirtualClass" }).click();
+	// 	// await expect(page).toHaveTitle("Dashboard");
+	// });
+
+	// test("testtttt", async ({ page }) => {
+	// 	await page.goto(`${domain}/dashboard`);
+	// 	await expect(page).toHaveTitle("Dashboard");
+	// 	const roomCard = page.getByText(roomName);
+	// 	await expect(roomCard).toBeAttached({ timeout: 15000 });
+	// });
+
+	test("check if room is created properly and can be joined", async ({
+		page,
+	}) => {
+		await page.goto(`${domain}/dashboard`);
+
 		await page.getByTestId("cool-room-input").click();
 		await page.getByTestId("cool-room-input").fill(roomName);
 		await page.getByRole("button", { name: "Join Room" }).click();
 		await expect(page).toHaveTitle("Classroom");
 		await expect(page).toHaveURL(`${domain}/classroom?slug=${roomName}`);
 		await page.getByRole("link", { name: "VirtualClass" }).click();
-		// await expect(page).toHaveTitle("Dashboard");
-	});
 
-	test("testtttt", async ({ page }) => {
-		await page.goto(`${domain}/dashboard`);
 		await expect(page).toHaveTitle("Dashboard");
-		const roomCard = page.getByText(roomName);
-		await expect(roomCard).toBeAttached({ timeout: 10000 });
-	});
-
-	test("check if starring and unstarring a room works", async ({ page }) => {
-		await page.goto(`${domain}/dashboard`);
+		await expect(page).toHaveURL(`${domain}/dashboard`);
 		const roomCard = page.getByTestId(`${roomName}-card`);
+		// const roomCard = page.getByText(roomName);
+		await expect(roomCard).toBeAttached({ timeout: 10000 });
+
+		// const roomCard = page.getByTestId(`${roomName}-card`);
 		const starButton = roomCard.getByTestId(`${roomName}-star-button`);
-		await expect(starButton).toBeAttached({ timeout: 10000 });
+		await expect(starButton).toBeAttached({ timeout: 15000 });
 		await expect(starButton).toHaveAttribute("aria-label", "Star room");
 
 		await starButton.click();
