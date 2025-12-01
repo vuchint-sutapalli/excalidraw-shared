@@ -11,12 +11,14 @@ import {
 	ExternalLink,
 	Star,
 	Loader2,
+	DeleteIcon,
 } from "lucide-react";
 import type { CanvasWhiteboardRef } from "@/lib/CanvasWhiteboard";
 import CanvasWhiteboard from "@/lib/CanvasWhiteboard";
 import type { Element } from "@/lib/CanvasWhiteboard/types";
 import {
 	editRoomMetaData,
+	deleteRoom,
 	RoomData,
 	fetchShapesInClient as getRoomElements,
 } from "@/apis/room.client";
@@ -103,6 +105,22 @@ export function RoomCard({
 		await navigator.clipboard.writeText(roomUrl);
 		showSnackbar("Link copied to clipboard!", "success");
 		setIsMenuOpen(false);
+	};
+
+	const handleDelete = async (e: React.MouseEvent) => {
+		e.stopPropagation();
+		try {
+			const responseData = await deleteRoom(slug);
+
+			showSnackbar(responseData.message, "success");
+			setIsMenuOpen(false);
+		} catch (error) {
+			console.error("Failed to delete room:", error);
+			setIsMenuOpen(false);
+			showSnackbar("Failed to delete room.", "error");
+			return;
+		}
+		queryClient.invalidateQueries({ queryKey: ["userRooms"] });
 	};
 
 	const handleShare = async (e: React.MouseEvent) => {
@@ -205,7 +223,10 @@ export function RoomCard({
 	};
 
 	return (
-		<div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-purple-500 transition-all duration-200 flex flex-col">
+		<div
+			data-testid={slug + "-card"}
+			className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-purple-500 transition-all duration-200 flex flex-col"
+		>
 			<div
 				onClick={() => !isMenuOpen && router.push(`/classroom?slug=${slug}`)}
 				className=" cursor-pointer aspect-video w-full bg-gray-100 rounded-t-lg flex items-center justify-center overflow-hidden"
@@ -280,6 +301,7 @@ export function RoomCard({
 							<Button
 								variant="ghost"
 								size="icon"
+								data-testid={slug + "-menu-button"}
 								className="h-7 w-7 rounded-full cursor-pointer"
 								onClick={handleMenuToggle}
 							>
@@ -287,6 +309,7 @@ export function RoomCard({
 							</Button>
 							{isMenuOpen && (
 								<div
+									data-testid={slug + "-menu"}
 									className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10 p-1
 												after:content-[''] after:absolute after:left-1/2 after:top-full after:-translate-x-1/2 after:border-x-8 after:border-x-transparent after:border-t-8 after:border-t-white
 												before:content-[''] before:absolute before:left-1/2 before:top-full before:-translate-x-1/2 before:border-x-[9px] before:border-x-transparent before:border-t-[9px] before:border-t-gray-200"
@@ -313,6 +336,13 @@ export function RoomCard({
 									>
 										<Copy className="h-4 w-4" />
 										Copy link
+									</button>
+									<button
+										onClick={handleDelete}
+										className="w-full text-left flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+									>
+										<DeleteIcon className="h-4 w-4" />
+										Delete Room
 									</button>
 								</div>
 							)}
