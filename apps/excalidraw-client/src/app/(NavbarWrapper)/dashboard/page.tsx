@@ -98,7 +98,7 @@ export default function Home() {
 					buttonText="Create Room"
 					onClick={handleCreateRoom}
 					isLoading={isCreatingRoom}
-					roomCodePlaceholder="Enter Room Name"
+					roomCodePlaceholder="new-room"
 				/>
 				<RoomActionCard
 					title="Join a Room"
@@ -106,6 +106,7 @@ export default function Home() {
 					buttonText="Join Room"
 					onClick={({ roomCode }) => joinRoomMutation(roomCode)}
 					isLoading={isJoiningRoom}
+					roomCodePlaceholder="cool-room"
 				/>
 			</div>
 

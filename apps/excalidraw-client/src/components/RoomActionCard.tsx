@@ -52,6 +52,7 @@ export function RoomActionCard({
 							<Label htmlFor="room-code">Room Name</Label>
 							<Input
 								id="room-code"
+								data-testid={roomCodePlaceholder + "-input"}
 								placeholder={roomCodePlaceholder}
 								value={roomCode}
 								onChange={(e) => setRoomCode(e.target.value)}

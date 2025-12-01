@@ -279,6 +279,7 @@ export function RoomCard({
 					<div className="flex items-center">
 						<Button
 							variant="ghost"
+							data-testid={slug + "-star-button"}
 							size="icon"
 							className="h-7 w-7 rounded-full"
 							onClick={handleStarToggle}
