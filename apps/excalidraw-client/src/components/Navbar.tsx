@@ -75,7 +75,11 @@ export function Navbar() {
 						</div>
 					</div>
 					{/* Logo and App Name */}
-					<Link href="/dashboard" className="flex items-center space-x-3">
+					<Link
+						data-testid="navbar-logo"
+						href="/dashboard"
+						className="flex items-center space-x-3"
+					>
 						<div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
 							<Video className="w-5 h-5 text-white" />
 						</div>
