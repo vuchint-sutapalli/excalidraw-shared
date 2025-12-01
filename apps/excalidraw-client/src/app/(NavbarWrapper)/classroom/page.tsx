@@ -6,6 +6,12 @@ import { validateSearchParam } from "@/lib/validateSearchParam";
 
 import React from "react";
 
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+	title: "Classroom",
+};
+
 // Page components in the App Router are Server Components by default.
 
 // They receive searchParams as a prop, which contains the URL query parameters.

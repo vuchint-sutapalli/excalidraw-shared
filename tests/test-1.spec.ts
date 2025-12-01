@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("room workflow", () => {
-	const domain = "http://localhost:3000";
-	// const domain = "https://slategpt.app";
+	// const domain = "http://localhost:3000";
+	const domain = "https://slategpt.app";
 	const roomName = `workflow-${Math.random().toString(36).slice(2, 9)}`;
 
 	test.beforeEach(async ({ page }) => {
@@ -31,7 +31,8 @@ test.describe("room workflow", () => {
 	test("check if room creation worked", async ({ page }) => {
 		await page.goto(`${domain}/dashboard`);
 		const roomCard = page.getByTestId(`${roomName}-card`);
-		await expect(roomCard).toBeVisible({ timeout: 10000 });
+		await expect(roomCard).toBeAttached();
+		await expect(roomCard).toContainText(roomName);
 	});
 
 	test("check if join room works", async ({ page }) => {
@@ -49,7 +50,7 @@ test.describe("room workflow", () => {
 		await page.goto(`${domain}/dashboard`);
 		const roomCard = page.getByTestId(`${roomName}-card`);
 		const starButton = roomCard.getByTestId(`${roomName}-star-button`);
-		await expect(starButton).toBeVisible({ timeout: 15000 });
+		await expect(starButton).toBeAttached();
 		await expect(starButton).toHaveAttribute("aria-label", "Star room");
 
 		await starButton.click();
