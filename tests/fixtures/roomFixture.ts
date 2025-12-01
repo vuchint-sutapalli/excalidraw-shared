@@ -21,7 +21,9 @@ async function createRoom(page: any, roomName: string) {
 }
 
 async function goBackToDashboard(page: any) {
-	await page.getByRole("link", { name: "VirtualClass" }).click();
+	// await page.getByRole("link", { name: "VirtualClass" }).click();
+	await page.getByTestId("navbar-logo").click();
+
 	await expect(page).toHaveURL(`${domain}/dashboard`);
 }
 

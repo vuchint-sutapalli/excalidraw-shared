@@ -2,6 +2,29 @@ import { test } from "./fixtures/roomFixture"; // adjust path
 import { expect } from "@playwright/test";
 const domain = process.env.DOMAIN ?? "https://slategpt.app";
 
+async function toggleStarAndAssert(
+	page: any,
+	roomName: string,
+	targetLabel: "Star room" | "Unstar room"
+) {
+	const roomCard = page.getByTestId(`${roomName}-card`);
+	const starButton = roomCard.getByTestId(`${roomName}-star-button`);
+
+	// Click the button
+	await starButton.click();
+
+	// 1) Wait for the label to change in-place (no reload yet)
+	await expect(starButton).toHaveAttribute("aria-label", targetLabel);
+
+	// 2) Reload and check it persists
+	await page.reload({ waitUntil: "networkidle" });
+
+	const reloadedCard = page.getByTestId(`${roomName}-card`);
+	const reloadedStar = reloadedCard.getByTestId(`${roomName}-star-button`);
+
+	await expect(reloadedStar).toHaveAttribute("aria-label", targetLabel);
+}
+
 // 1) Room appears on dashboard
 test("room card is visible on dashboard after creation", async ({
 	page,
@@ -35,20 +58,8 @@ test("room can be starred and unstarred from dashboard", async ({
 	await expect(starButton).toHaveAttribute("aria-label", "Star room");
 
 	// Star
-	await starButton.click();
-	await page.reload();
-
-	const starAfterStar = page
-		.getByTestId(`${roomName}-card`)
-		.getByTestId(`${roomName}-star-button`);
-	await expect(starAfterStar).toHaveAttribute("aria-label", "Unstar room");
+	await toggleStarAndAssert(page, roomName, "Unstar room");
 
 	// Unstar
-	await starAfterStar.click();
-	await page.reload();
-
-	const starAfterUnstar = page
-		.getByTestId(`${roomName}-card`)
-		.getByTestId(`${roomName}-star-button`);
-	await expect(starAfterUnstar).toHaveAttribute("aria-label", "Star room");
+	await toggleStarAndAssert(page, roomName, "Star room");
 });
