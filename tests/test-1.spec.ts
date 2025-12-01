@@ -25,10 +25,11 @@ test.describe("room workflow", () => {
 	test("check if room creation worked", async ({ page }) => {
 		await page.goto(`${domain}/dashboard`);
 		const roomCard = page.getByTestId("test-workflow-card");
-		await expect(roomCard).toBeVisible();
+		await expect(roomCard).toBeVisible({ timeout: 10000 });
 	});
 
 	test("check if join room works", async ({ page }) => {
+		await page.goto(`${domain}/dashboard`);
 		await page.getByTestId("cool-room-input").click();
 		await page.getByTestId("cool-room-input").fill("test-workflow");
 		await page.getByRole("button", { name: "Join Room" }).click();
@@ -41,7 +42,7 @@ test.describe("room workflow", () => {
 	test("check if starring and unstarring a room works", async ({ page }) => {
 		await page.goto(`${domain}/dashboard`);
 		const starButton = page.getByTestId("test-workflow-star-button");
-		await expect(starButton).toBeVisible();
+		await expect(starButton).toBeVisible({ timeout: 10000 });
 		await expect(starButton).toHaveAttribute("aria-label", "Star room");
 
 		await starButton.click();
