@@ -7,8 +7,8 @@ on:
 env:
   HOST: 20.244.41.51
   USERNAME: vuchint
-  NEXT_PUBLIC_WS_URL: wss://staging.ws.slategpt.app
-  NEXT_PUBLIC_BACKEND_URL: https://staging.api.slategpt.app
+  NEXT_PUBLIC_WS_URL: wss://prod.ws.slategpt.app
+  NEXT_PUBLIC_BACKEND_URL: https://prod.api.slategpt.app
 
 jobs:
   deploy:
