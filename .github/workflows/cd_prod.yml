@@ -83,7 +83,7 @@ jobs:
             set -euo pipefail
 
             echo "=== 🚀 Starting Deployment on $(hostname) ==="
-            export PATH="/home/${{ env.USERNAME }}/.nvm/versions/node/v24.11.0/bin:$PATH"
+            export PATH="/home/${{ env.USERNAME }}/.nvm/versions/node/v24.12.0/bin:$PATH"
 
             cd /home/${{ env.USERNAME }}/excalidraw-shared || {
               echo "❌ Directory not found"; exit 1;
