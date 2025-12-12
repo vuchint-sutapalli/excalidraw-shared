@@ -133,6 +133,9 @@ importers:
       '@types/jsonwebtoken':
         specifier: ^9.0.10
         version: 9.0.10
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   apps/ws-backend:
     dependencies:
@@ -170,6 +173,9 @@ importers:
       '@repo/backend-common':
         specifier: workspace:*
         version: link:../../packages/backend-common
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/backend-common:
     dependencies:
@@ -226,10 +232,10 @@ importers:
     dependencies:
       '@prisma/client':
         specifier: 6.15.0
-        version: 6.15.0(prisma@6.15.0(typescript@5.9.2))(typescript@5.9.2)
+        version: 6.15.0(prisma@6.15.0(typescript@5.9.3))(typescript@5.9.3)
       prisma:
         specifier: ^6.15.0
-        version: 6.15.0(typescript@5.9.2)
+        version: 6.15.0(typescript@5.9.3)
     devDependencies:
       '@repo/typescript-config':
         specifier: workspace:*
@@ -3565,6 +3571,11 @@ packages:
     resolution: {integrity: sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==}
     engines: {node: '>=14.17'}
 
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   unbox-primitive@1.1.0:
     resolution: {integrity: sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw==}
     engines: {node: '>= 0.4'}
@@ -4225,10 +4236,10 @@ snapshots:
     dependencies:
       playwright: 1.57.0
 
-  '@prisma/client@6.15.0(prisma@6.15.0(typescript@5.9.2))(typescript@5.9.2)':
+  '@prisma/client@6.15.0(prisma@6.15.0(typescript@5.9.3))(typescript@5.9.3)':
     optionalDependencies:
-      prisma: 6.15.0(typescript@5.9.2)
-      typescript: 5.9.2
+      prisma: 6.15.0(typescript@5.9.3)
+      typescript: 5.9.3
 
   '@prisma/config@6.15.0':
     dependencies:
@@ -6690,12 +6701,12 @@ snapshots:
 
   prettier@3.6.2: {}
 
-  prisma@6.15.0(typescript@5.9.2):
+  prisma@6.15.0(typescript@5.9.3):
     dependencies:
       '@prisma/config': 6.15.0
       '@prisma/engines': 6.15.0
     optionalDependencies:
-      typescript: 5.9.2
+      typescript: 5.9.3
     transitivePeerDependencies:
       - magicast
 
@@ -7332,6 +7343,8 @@ snapshots:
   typescript@5.8.3: {}
 
   typescript@5.9.2: {}
+
+  typescript@5.9.3: {}
 
   unbox-primitive@1.1.0:
     dependencies:
