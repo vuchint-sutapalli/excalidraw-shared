@@ -1,18 +1,18 @@
-name: Deploy to Staging
+name: Deploy to Prod
 
 on:
   push:
     branches: [production]
 
 env:
-  HOST: 20.244.41.51
+  HOST: 52.172.8.152
   USERNAME: vuchint
   NEXT_PUBLIC_WS_URL: wss://prod.ws.slategpt.app
   NEXT_PUBLIC_BACKEND_URL: https://prod.api.slategpt.app
 
 jobs:
   deploy:
-    name: Deploy Monorepo to Staging
+    name: Deploy Monorepo to Prod
     runs-on: ubuntu-latest
 
     steps:
@@ -50,7 +50,7 @@ jobs:
 
       - name: Validate SSH Key
         run: |
-          if [ -z "${{ secrets.SSH_KEY_STAGING }}" ]; then
+          if [ -z "${{ secrets.SSH_KEY }}" ]; then
             echo "❌ SSH key secret not found!"
             exit 1
           fi
@@ -59,7 +59,7 @@ jobs:
       - name: Setup SSH known hosts
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.KNOWN_HOSTS_STAGING }}" > ~/.ssh/known_hosts
+          echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
       - name: Copy build artifact to VM
@@ -67,7 +67,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          key: ${{ secrets.SSH_KEY_STAGING }}
+          key: ${{ secrets.SSH_KEY }}
           source: "web_build.tar.gz"
           target: "/home/${{ env.USERNAME }}/deploy_artifacts/"
 
@@ -76,7 +76,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.USERNAME }}
-          key: ${{ secrets.SSH_KEY_STAGING }}
+          key: ${{ secrets.SSH_KEY }}
           script_stop: true
           timeout: 5m
           script: |
