@@ -114,6 +114,7 @@ jobs:
             echo "🔐 Writing runtime .env file..."
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/http-backend/.env
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/ws-backend/.env
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > packages/db/.env
 
             echo "🔁 Restarting PM2 processes..."
             pm2 reload http-server || pm2 start apps/http-backend/dist/index.js --name http-server
