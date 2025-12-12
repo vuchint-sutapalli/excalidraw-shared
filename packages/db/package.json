@@ -5,7 +5,9 @@
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"db:migrate": "prisma migrate deploy --schema prisma/schema.prisma",
+		"db:generate": "prisma generate --schema prisma/schema.prisma"
 	},
 	"devDependencies": {
 		"@repo/typescript-config": "workspace:*"
