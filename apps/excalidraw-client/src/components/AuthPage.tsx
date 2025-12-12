@@ -133,7 +133,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
 						<Video className="w-6 h-6 text-white" />
 					</div>
 					<span className="ml-3 text-2xl font-bold text-gray-900">
-						VirtualClass
+						VirtualSlate
 					</span>
 				</div>
 
