@@ -28,6 +28,7 @@ export default function Home() {
 	// Add a class to the body to prevent scrolling when in the classroom
 	useEffect(() => {
 		document.body.classList.add("has-scroll");
+		document.title = "Dashboard";
 
 		// Cleanup function to remove the class when the component unmounts
 		return () => {
@@ -97,7 +98,7 @@ export default function Home() {
 					buttonText="Create Room"
 					onClick={handleCreateRoom}
 					isLoading={isCreatingRoom}
-					roomCodePlaceholder="Enter Room Name"
+					roomCodePlaceholder="new-room"
 				/>
 				<RoomActionCard
 					title="Join a Room"
@@ -105,6 +106,7 @@ export default function Home() {
 					buttonText="Join Room"
 					onClick={({ roomCode }) => joinRoomMutation(roomCode)}
 					isLoading={isJoiningRoom}
+					roomCodePlaceholder="cool-room"
 				/>
 			</div>
 
