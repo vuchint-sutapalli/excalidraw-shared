@@ -103,6 +103,10 @@ jobs:
             tar -xzf /home/${{ env.USERNAME }}/deploy_artifacts/web_build.tar.gz -C apps/excalidraw-client
             echo "✅ Extraction complete!"
 
+            echo "🛠️ Running DB Migrations and Generating Client..."
+            DATABASE_URL='${{ secrets.DATABASE_URL }}' pnpm --filter @repo/db db:migrate --name deploy_$(date +%Y%m%d%H%M)
+            DATABASE_URL='${{ secrets.DATABASE_URL }}' pnpm --filter @repo/db db:generate
+
             echo "🏗️ Building lightweight backend apps..."
             cd apps/http-backend && pnpm run build && cd ../..
             cd apps/ws-backend && pnpm run build && cd ../..
