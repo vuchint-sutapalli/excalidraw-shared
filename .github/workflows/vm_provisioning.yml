@@ -47,6 +47,7 @@ jobs:
           gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
             --zone=${{ env.GCP_ZONE }} \
             --project=${{ env.GCP_PROJECT_ID }} \
+            --tunnel-through-iap
             --command='
               set -euo pipefail
               
