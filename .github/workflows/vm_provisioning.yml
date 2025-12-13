@@ -42,6 +42,7 @@ jobs:
         run: |
           # The node version is now pulled from the fixed environment variable
           NODE_VERSION=${{ env.NODE_VERSION_TO_INSTALL }}
+          PNPM_VERSION=9.0.0
           echo "Target Node Version: $NODE_VERSION"
 
           gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
@@ -78,16 +79,24 @@ jobs:
               else
                 echo \"   Node.js ${NODE_VERSION} is already installed.\"
               fi
-              
+
               nvm alias default ${NODE_VERSION}
               
-              # --- 3. PNPM & PM2 INSTALLATION (CONDITIONAL) ---
-              echo \"3. Checking for pnpm and PM2...\"
-              if ! command -v pnpm &> /dev/null || ! command -v pm2 &> /dev/null; then
-                  echo \"   Installing pnpm and PM2 globally...\"
-                  npm install -g pnpm pm2
+              # Check if pnpm is installed OR if its version is NOT the desired version
+              if ! command -v pnpm &> /dev/null || [ \"\$(pnpm --version)\" != \"${PNPM_VERSION}\" ]; then
+                echo \"   Installing/Updating pnpm@${PNPM_VERSION} globally...\"
+                npm install -g pnpm@${PNPM_VERSION}
               else
-                  echo \"   pnpm and PM2 are already installed.\"
+                echo \"   pnpm@${PNPM_VERSION} is already installed.\"
+              fi
+
+              # --- 4. PM2 INSTALLATION (CONDITIONAL) ---
+              echo \"4. Checking for PM2...\"
+              if ! command -v pm2 &> /dev/null; then
+                echo \"   Installing PM2 globally...\"
+                npm install -g pm2
+              else
+                echo \"   PM2 is already installed.\"
               fi
               
               echo \"✅ VM Setup Complete. Node version: \$(node -v)\"
