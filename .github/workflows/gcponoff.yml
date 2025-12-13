@@ -1,0 +1,77 @@
+name: GCP VM Instance Control (Manual)
+
+# 1. Define the manual trigger with a dropdown menu input
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Select desired VM operation"
+        required: true
+        type: choice
+        options:
+          - start
+          - stop
+          - status
+
+# 2. Define environment variables for clean configuration
+env:
+  GCP_PROJECT_ID: "project-716b8f55-83a6-4bef-95a"
+  GCP_ZONE: "asia-south1-b"
+  GCP_VM_NAME: "instance-slategpt"
+  SA_EMAIL: "slategpt@project-716b8f55-83a6-4bef-95a.iam.gserviceaccount.com"
+  WIF_PROVIDER: "projects/445521739152/locations/global/workloadIdentityPools/slategpt-pool-id/providers/github"
+
+jobs:
+  vm-control:
+    runs-on: ubuntu-latest
+
+    # CRITICAL: Grant permission to the runner to fetch the OIDC token
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 3. Authenticate using Workload Identity Federation (WIF)
+      - name: Authenticate to GCP (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.SA_EMAIL }}
+
+      # ------------------------------------------------------------------
+      # Conditional Steps
+      # Execution is determined by the user's choice from the dropdown
+      # ------------------------------------------------------------------
+
+      - name: Start GCE VM
+        # Only run if the user selected 'start'
+        if: ${{ github.event.inputs.action == 'start' }}
+        run: |
+          echo "Initiating VM start for ${{ env.GCP_VM_NAME }} in ${{ env.GCP_ZONE }}..."
+          gcloud compute instances start ${{ env.GCP_VM_NAME }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }}
+          echo "VM start command executed."
+
+      - name: Stop GCE VM
+        # Only run if the user selected 'stop'
+        if: ${{ github.event.inputs.action == 'stop' }}
+        run: |
+          echo "Initiating VM stop for ${{ env.GCP_VM_NAME }} in ${{ env.GCP_ZONE }}..."
+          gcloud compute instances stop ${{ env.GCP_VM_NAME }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }}
+          echo "VM stop command executed."
+
+      - name: Get VM Status
+        # Only run if the user selected 'status'
+        if: ${{ github.event.inputs.action == 'status' }}
+        run: |
+          echo "Fetching status for ${{ env.GCP_VM_NAME }}..."
+          gcloud compute instances describe ${{ env.GCP_VM_NAME }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --format='yaml(status, networkInterfaces[0].accessConfigs[0].natIP, zone)'
