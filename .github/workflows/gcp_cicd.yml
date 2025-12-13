@@ -87,46 +87,63 @@ jobs:
           gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
             --zone=${{ env.GCP_ZONE }} \
             --project=${{ env.GCP_PROJECT_ID }} \
-            --command='
+            --tunnel-through-iap \ # <--- CRITICAL FIX: IAP Tunnel
+            --command="
               set -euo pipefail
 
-              echo "=== 🚀 Starting Deployment on $(hostname) ==="
-              export PATH="/home/${{ env.USERNAME }}/.nvm/versions/node/v24.11.0/bin:$PATH"
+              DEPLOY_HOME=/home/${{ env.USERNAME }}
+              REPO_DIR=\${DEPLOY_HOME}/excalidraw-shared
+              ARTIFACT_DIR=\${DEPLOY_HOME}/deploy_artifacts
 
-              cd /home/${{ env.USERNAME }}/excalidraw-shared || {
-                echo "❌ Directory not found"; exit 1;
-              }
-              # ... (Rest of the deployment script) ...
-              
-              echo "🔄 Pulling latest changes..."
+              echo \"=== 🚀 Starting Deployment on \$(hostname) ===\"
+
+              # 1. Load NVM/Node Environment (Reliability Fix)
+              export NVM_DIR=\"\${DEPLOY_HOME}/.nvm\"
+              [ -s \"\${NVM_DIR}/nvm.sh\" ] && \. \"\${NVM_DIR}/nvm.sh\"
+              nvm use default # Use the default version installed by provisioning
+
+              # 2. Update Source Code and Install Dependencies
+              echo \"🔄 Pulling latest changes...\"
+              cd \${REPO_DIR} || { echo \"❌ Repo directory not found\"; exit 1; }
               git fetch origin production
               git reset --hard origin/production
 
-              echo "📦 Installing dependencies..."
+              echo \"📦 Installing monorepo dependencies...\"
               pnpm install --frozen-lockfile
 
-              echo "📦 Cleaning old .next folder before extraction..."
+              # 3. Extract and Configure Frontend
+              echo \"📦 Cleaning old frontend build folder...\"
               rm -rf apps/excalidraw-client/.next
 
-              echo "📦 Extracting new Next.js build..."
-              tar -xzf /home/${{ env.USERNAME }}/deploy_artifacts/web_build.tar.gz -C apps/excalidraw-client
-              echo "✅ Extraction complete!"
+              echo \"📦 Extracting new Next.js build...\"
+              tar -xzf \${ARTIFACT_DIR}/web_build.tar.gz -C apps/excalidraw-client
+              echo \"✅ Extraction complete!\"
 
-              echo "🛠️ Running DB Migrations and Generating Client..."
-              DATABASE_URL='${{ secrets.DATABASE_URL }}' pnpm --filter @repo/db db:migrate
-              DATABASE_URL='${{ secrets.DATABASE_URL }}' pnpm --filter @repo/db db:generate
+              # 4. Database & Backend Build (Security Fix: Secrets Injection)
+              # NOTE: Secrets must be available as environment variables for pnpm run
+              export DATABASE_URL=\"${{ secrets.DATABASE_URL }}\"
 
-              echo "🏗️ Building lightweight backend apps..."
-              cd apps/http-backend && pnpm run build && cd ../..
-              cd apps/ws-backend && pnpm run build && cd ../..
+              echo \"🛠️ Running DB Migrations and Generating Client...\"
+              pnpm --filter @repo/db db:migrate
+              pnpm --filter @repo/db db:generate
 
-              echo "🔐 Writing runtime .env file..."
-              echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > packages/db/.env
+              echo \"🏗️ Building lightweight backend apps...\"
+              pnpm --filter 'apps/http-backend' build
+              pnpm --filter 'apps/ws-backend' build
 
-              echo "🔁 Restarting PM2 processes..."
-              pm2 reload http-server || pm2 start apps/http-backend/dist/index.js --name http-server
-              pm2 reload ws-server || pm2 start apps/ws-backend/dist/index.js --name ws-server
+              echo \"🔐 Writing runtime .env file (Only for packages that require it)...\"
+              # Ensure this .env file is only written if necessary for the runtime.
+              echo \"DATABASE_URL=\${DATABASE_URL}\" > packages/db/.env
+
+              # 5. Restart PM2 processes
+              echo \"🔁 Restarting PM2 processes...\"
+
+              # Use the 'start' command for the PM2 script to ensure pnpm is in path
+              pm2 reload http-server || pm2 start dist/index.js --cwd apps/http-backend --name http-server
+              pm2 reload ws-server || pm2 start dist/index.js --cwd apps/ws-backend --name ws-server
               pm2 reload fe-server || pm2 start "pnpm --dir apps/excalidraw-client start" --name fe-server
 
-              echo "✅ Deployment completed successfully!"
-            '
+              pm2 save # Save process list for automatic reboot
+
+              echo \"✅ Deployment completed successfully!\"
+            "
