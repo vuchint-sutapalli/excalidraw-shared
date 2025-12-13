@@ -1,0 +1,41 @@
+name: start and stop gcp vm instance
+
+on:
+  workflow_dispatch:
+
+jobs:
+  start-vm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/445521739152/locations/global/workloadIdentityPools/slategpt-pool-id/providers/github
+          service_account: slategpt@project-716b8f55-83a6-4bef-95a.iam.gserviceaccount.com
+      - name: Start GCE VM
+        run: |
+          gcloud compute instances start instance-slategpt --zone=asia-south1-b
+  stop-vm:
+    needs: start-vm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/445521739152/locations/global/workloadIdentityPools/slategpt-pool-id/providers/github
+          service_account: slategpt@project-716b8f55-83a6-4bef-95a.iam.gserviceaccount.com
+      - name: Stop GCE VM
+        run: |
+          gcloud compute instances stop instance-slategpt --zone=asia-south1-b

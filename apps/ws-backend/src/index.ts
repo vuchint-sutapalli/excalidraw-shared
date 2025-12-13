@@ -4,7 +4,7 @@ import { WebSocketWithID } from "./types.js";
 import { handleDisconnect } from "./roomManager.js";
 import { handleMessage } from "./messageHandler.js";
 
-const wss = new WebSocketServer({ port: 8080 });
+const wss = new WebSocketServer({ port: 3002 });
 
 const HTTP_BACKEND_URL =
 	process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
@@ -91,4 +91,4 @@ const interval = setInterval(() => {
 	});
 }, 30000); // Ping every 30 seconds
 
-console.log("WebSocket server is running on port 8080");
+console.log("WebSocket server is running on port 3002");

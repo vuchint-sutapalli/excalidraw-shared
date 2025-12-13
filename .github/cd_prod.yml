@@ -1,0 +1,122 @@
+name: Deploy to Prod
+
+on:
+  push:
+    branches: [production]
+
+env:
+  HOST: 20.254.201.136
+  USERNAME: azureuser
+  NEXT_PUBLIC_WS_URL: wss://prod.ws.slategpt.app
+  NEXT_PUBLIC_BACKEND_URL: https://prod.api.slategpt.app
+
+jobs:
+  deploy:
+    name: Deploy Monorepo to Prod
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Next.js app
+        run: |
+          cd apps/excalidraw-client
+          NEXT_PUBLIC_WS_URL=${{ env.NEXT_PUBLIC_WS_URL }} NEXT_PUBLIC_BACKEND_URL=${{ env.NEXT_PUBLIC_BACKEND_URL }} pnpm run build
+
+      - name: Package build folder
+        run: |
+          cd apps/excalidraw-client
+          echo "Current directory: $(pwd)"
+          echo "Files in current directory:"
+          ls -la
+          echo "Checking .next directory:"
+          ls -la .next || echo ".next not found"
+          tar -czf ../../web_build.tar.gz .next package.json next.config.mjs public
+
+      - name: Validate SSH Key
+        run: |
+          if [ -z "${{ secrets.SSH_KEY }}" ]; then
+            echo "❌ SSH key secret not found!"
+            exit 1
+          fi
+          echo "✅ SSH key is available."
+
+      - name: Setup SSH known hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Copy build artifact to VM
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "web_build.tar.gz"
+          target: "/home/${{ env.USERNAME }}/deploy_artifacts/"
+
+      - name: Deploy via SSH (Appleboy)
+        uses: appleboy/ssh-action@v1.0.1
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          timeout: 5m
+          script: |
+            set -euo pipefail
+
+            echo "=== 🚀 Starting Deployment on $(hostname) ==="
+            export PATH="/home/${{ env.USERNAME }}/.nvm/versions/node/v24.11.0/bin:$PATH"
+
+            cd /home/${{ env.USERNAME }}/excalidraw-shared || {
+              echo "❌ Directory not found"; exit 1;
+            }
+
+            echo "🔄 Pulling latest changes..."
+            git fetch origin production
+            git reset --hard origin/production
+
+            echo "📦 Installing dependencies..."
+            pnpm install --frozen-lockfile
+
+            echo "📦 Cleaning old .next folder before extraction..."
+            rm -rf apps/excalidraw-client/.next
+
+            echo "📦 Extracting new Next.js build..."
+            tar -xzf /home/${{ env.USERNAME }}/deploy_artifacts/web_build.tar.gz -C apps/excalidraw-client
+            echo "✅ Extraction complete!"
+
+            echo "🛠️ Running DB Migrations and Generating Client..."
+            DATABASE_URL='${{ secrets.DATABASE_URL }}' pnpm --filter @repo/db db:migrate
+            DATABASE_URL='${{ secrets.DATABASE_URL }}' pnpm --filter @repo/db db:generate
+
+            echo "🏗️ Building lightweight backend apps..."
+            cd apps/http-backend && pnpm run build && cd ../..
+            cd apps/ws-backend && pnpm run build && cd ../..
+
+            echo "🔐 Writing runtime .env file..."
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > packages/db/.env
+
+            echo "🔁 Restarting PM2 processes..."
+            pm2 reload http-server || pm2 start apps/http-backend/dist/index.js --name http-server
+            pm2 reload ws-server || pm2 start apps/ws-backend/dist/index.js --name ws-server
+            pm2 reload fe-server || pm2 start "pnpm --dir apps/excalidraw-client start" --name fe-server
+
+            echo "✅ Deployment completed successfully!"
