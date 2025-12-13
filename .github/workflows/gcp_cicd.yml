@@ -1,0 +1,132 @@
+name: Deploy Monorepo to Prod (GCP - Manual)
+
+# -----------------------------------------------------------------------
+# CHANGE: Switched from 'push' to 'workflow_dispatch' for manual trigger
+# -----------------------------------------------------------------------
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Brief reason for this manual deployment (e.g., "WIF test", "Backend fix")'
+        required: false
+        default: "Manual deployment triggered"
+
+env:
+  # --- GCP/WIF CONFIGURATION (MUST BE UPDATED) ---
+  GCP_PROJECT_ID: "project-716b8f55-83a6-4bef-95a"
+  GCP_ZONE: "asia-south1-b"
+  GCP_VM_NAME: "instance-slategpt"
+  SA_EMAIL: "slategpt@project-716b8f55-83a6-4bef-95a.iam.gserviceaccount.com"
+  WIF_PROVIDER: "projects/445521739152/locations/global/workloadIdentityPools/slategpt-pool-id/providers/github"
+
+  # --- APPLICATION ENVIRONMENT VARIABLES ---
+  USERNAME: "vuchint_sutapalli" # This should be your GCP VM user
+  NEXT_PUBLIC_WS_URL: wss://prod.ws.slategpt.app
+  NEXT_PUBLIC_BACKEND_URL: https://prod.api.slategpt.app
+
+jobs:
+  deploy:
+    name: Deploy Monorepo to Prod
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Checkout repository and Log Reason
+        uses: actions/checkout@v4
+        with:
+          # Optional: Log the reason for manual deployment
+          post-steps: |
+            echo "Deployment Reason: ${{ github.event.inputs.reason }}"
+
+      # --- START: BUILD STEPS (No Change) ---
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Next.js app
+        run: |
+          cd apps/excalidraw-client
+          NEXT_PUBLIC_WS_URL=${{ env.NEXT_PUBLIC_WS_URL }} NEXT_PUBLIC_BACKEND_URL=${{ env.NEXT_PUBLIC_BACKEND_URL }} pnpm run build
+
+      - name: Package build folder
+        run: |
+          cd apps/excalidraw-client
+          tar -czf ../../web_build.tar.gz .next package.json next.config.mjs public
+      # --- END: BUILD STEPS ---
+      # 1. Authenticate using Workload Identity Federation (WIF)
+      - name: Authenticate to GCP (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.SA_EMAIL }}
+
+      # 2. Copy build artifact to VM using gcloud scp
+      - name: Copy build artifact to VM (GCP Method)
+        run: |
+          gcloud compute scp web_build.tar.gz \
+            ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }}:/home/${{ env.USERNAME }}/deploy_artifacts/ \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }}
+
+      # 3. Deploy via SSH (gcloud Method)
+      - name: Deploy via SSH (GCP Method)
+        run: |
+          gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --command='
+              set -euo pipefail
+
+              echo "=== 🚀 Starting Deployment on $(hostname) ==="
+              export PATH="/home/${{ env.USERNAME }}/.nvm/versions/node/v24.11.0/bin:$PATH"
+
+              cd /home/${{ env.USERNAME }}/excalidraw-shared || {
+                echo "❌ Directory not found"; exit 1;
+              }
+              # ... (Rest of the deployment script) ...
+              
+              echo "🔄 Pulling latest changes..."
+              git fetch origin production
+              git reset --hard origin/production
+
+              echo "📦 Installing dependencies..."
+              pnpm install --frozen-lockfile
+
+              echo "📦 Cleaning old .next folder before extraction..."
+              rm -rf apps/excalidraw-client/.next
+
+              echo "📦 Extracting new Next.js build..."
+              tar -xzf /home/${{ env.USERNAME }}/deploy_artifacts/web_build.tar.gz -C apps/excalidraw-client
+              echo "✅ Extraction complete!"
+
+              echo "🛠️ Running DB Migrations and Generating Client..."
+              DATABASE_URL='${{ secrets.DATABASE_URL }}' pnpm --filter @repo/db db:migrate
+              DATABASE_URL='${{ secrets.DATABASE_URL }}' pnpm --filter @repo/db db:generate
+
+              echo "🏗️ Building lightweight backend apps..."
+              cd apps/http-backend && pnpm run build && cd ../..
+              cd apps/ws-backend && pnpm run build && cd ../..
+
+              echo "🔐 Writing runtime .env file..."
+              echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > packages/db/.env
+
+              echo "🔁 Restarting PM2 processes..."
+              pm2 reload http-server || pm2 start apps/http-backend/dist/index.js --name http-server
+              pm2 reload ws-server || pm2 start apps/ws-backend/dist/index.js --name ws-server
+              pm2 reload fe-server || pm2 start "pnpm --dir apps/excalidraw-client start" --name fe-server
+
+              echo "✅ Deployment completed successfully!"
+            '
