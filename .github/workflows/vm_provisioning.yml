@@ -44,31 +44,51 @@ jobs:
           NODE_VERSION=${{ env.NODE_VERSION_TO_INSTALL }}
           echo "Target Node Version: $NODE_VERSION"
 
-          # Notice the structure below: gcloud command starts, and the --command
-          # argument uses the single-quote syntax to contain the entire script.
           gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
             --zone=${{ env.GCP_ZONE }} \
             --project=${{ env.GCP_PROJECT_ID }} \
             --tunnel-through-iap \
-            --command='
+            --command="
               set -euo pipefail
               
-              # --- 1. NVM/NODE INSTALLATION ---
-              echo "1. Installing NVM..."
-              # Use the curl command within the single-quoted string
-              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+              # --- 1. NVM INSTALLATION (CONDITIONAL) ---
+              if [ ! -d \"\$HOME/.nvm\" ]; then
+                echo \"1. NVM not found. Installing NVM...\"
+
+                # Install NVM
+                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+
+                # Define NVM environment variables for the current session
+                export NVM_DIR=\"\$HOME/.nvm\"
+                [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"
+
+              else
+                echo \"1. NVM already installed. Loading NVM...\"
+                export NVM_DIR=\"\$HOME/.nvm\"
+                [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"
+              fi
+
+              # --- 2. NODE INSTALLATION (VERSION CHECK) ---
+              echo \"2. Checking for Node.js ${NODE_VERSION}...\"
               
-              # Define NVM environment variables for the current session
-              export NVM_DIR="$HOME/.nvm"
-              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 
+              # Use the local variable here (it's substituted before running)
+              if ! nvm list | grep -q \"v${NODE_VERSION}\"; then
+                echo \"   Installing Node.js ${NODE_VERSION}...\"
+                nvm install ${NODE_VERSION}
+              else
+                echo \"   Node.js ${NODE_VERSION} is already installed.\"
+              fi
               
-              echo "2. Installing Node.js ${NODE_VERSION}..."
-              nvm install ${NODE_VERSION}
               nvm alias default ${NODE_VERSION}
               
-              # --- 2. PNPM & PM2 INSTALLATION ---
-              echo "3. Installing pnpm and PM2 globally..."
-              npm install -g pnpm pm2
+              # --- 3. PNPM & PM2 INSTALLATION (CONDITIONAL) ---
+              echo \"3. Checking for pnpm and PM2...\"
+              if ! command -v pnpm &> /dev/null || ! command -v pm2 &> /dev/null; then
+                  echo \"   Installing pnpm and PM2 globally...\"
+                  npm install -g pnpm pm2
+              else
+                  echo \"   pnpm and PM2 are already installed.\"
+              fi
               
-              echo "✅ VM Setup Complete. Log back in to confirm Node version: node -v"
-            ' # <--- IMPORTANT: The remote script ends with the closing single quote
+              echo \"✅ VM Setup Complete. Node version: \$(node -v)\"
+            "
