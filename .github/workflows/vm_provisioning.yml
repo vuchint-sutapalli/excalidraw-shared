@@ -1,0 +1,75 @@
+name: GCP VM Provisioning (Setup Node/PM2/pnpm)
+
+# Trigger this workflow manually when you need to set up a new VM
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for running provisioning (e.g., New VM setup)"
+        required: false
+        default: "Standard environment setup"
+
+# Define the fixed Node version here
+env:
+  NODE_VERSION_TO_INSTALL: "v24.11.0"
+
+  # --- GCP/WIF CONFIGURATION (Fill in your details) ---
+  GCP_PROJECT_ID: "project-716b8f55-83a6-4bef-95a"
+  GCP_ZONE: "asia-south1-b"
+  GCP_VM_NAME: "instance-slategpt"
+  USERNAME: "vuchint_sutapalli"
+  SA_EMAIL: "slategpt@project-716b8f55-83a6-4bef-95a.iam.gserviceaccount.com"
+  WIF_PROVIDER: "projects/445521739152/locations/global/workloadIdentityPools/slategpt-pool-id/providers/github"
+
+jobs:
+  provision_vm:
+    name: Install Runtime Environment
+    runs-on: ubuntu-latest
+
+    # CRITICAL: Grant permission to the runner to fetch the OIDC token
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Authenticate to GCP (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.SA_EMAIL }}
+
+      - name: Setup VM Environment (NVM, Node, pnpm, PM2)
+        run: |
+          # The node version is now pulled from the fixed environment variable
+          NODE_VERSION=${{ env.NODE_VERSION_TO_INSTALL }}
+          echo "Target Node Version: $NODE_VERSION"
+
+          gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --command='
+              set -euo pipefail
+              
+              # --- 1. NVM/NODE INSTALLATION ---
+              echo "1. Installing NVM..."
+              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+              
+              # Define NVM environment variables for the current session
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 
+              
+              echo "2. Installing Node.js ${NODE_VERSION}..."
+              nvm install ${NODE_VERSION}
+              nvm alias default ${NODE_VERSION}
+              
+              # --- 2. PNPM & PM2 INSTALLATION ---
+              echo "3. Installing pnpm and PM2 globally..."
+              npm install -g pnpm pm2
+              
+              # --- 3. INITIAL DIRECTORY SETUP (Optional, but useful) ---
+              echo "4. Creating deployment directory structure..."
+              mkdir -p /home/${{ env.USERNAME }}/deploy_artifacts
+              mkdir -p /home/${{ env.USERNAME }}/excalidraw-shared
+              
+              echo "✅ VM Setup Complete. Log back in to confirm Node version: node -v"
+            '
