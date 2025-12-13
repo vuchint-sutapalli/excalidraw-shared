@@ -79,7 +79,8 @@ jobs:
           gcloud compute scp web_build.tar.gz \
             ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }}:/home/${{ env.USERNAME }}/deploy_artifacts/ \
             --zone=${{ env.GCP_ZONE }} \
-            --project=${{ env.GCP_PROJECT_ID }}
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --tunnel-through-iap
 
       # 3. Deploy via SSH (gcloud Method)
       - name: Deploy via SSH (GCP Method)
