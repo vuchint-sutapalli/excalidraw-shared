@@ -44,15 +44,18 @@ jobs:
           NODE_VERSION=${{ env.NODE_VERSION_TO_INSTALL }}
           echo "Target Node Version: $NODE_VERSION"
 
+          # Notice the structure below: gcloud command starts, and the --command
+          # argument uses the single-quote syntax to contain the entire script.
           gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
             --zone=${{ env.GCP_ZONE }} \
             --project=${{ env.GCP_PROJECT_ID }} \
-            --tunnel-through-iap
+            --tunnel-through-iap \
             --command='
               set -euo pipefail
               
               # --- 1. NVM/NODE INSTALLATION ---
               echo "1. Installing NVM..."
+              # Use the curl command within the single-quoted string
               curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
               
               # Define NVM environment variables for the current session
@@ -67,10 +70,5 @@ jobs:
               echo "3. Installing pnpm and PM2 globally..."
               npm install -g pnpm pm2
               
-              # --- 3. INITIAL DIRECTORY SETUP (Optional, but useful) ---
-              echo "4. Creating deployment directory structure..."
-              mkdir -p /home/${{ env.USERNAME }}/deploy_artifacts
-              mkdir -p /home/${{ env.USERNAME }}/excalidraw-shared
-              
               echo "✅ VM Setup Complete. Log back in to confirm Node version: node -v"
-            '
+            ' # <--- IMPORTANT: The remote script ends with the closing single quote
