@@ -77,7 +77,7 @@ jobs:
       - name: Copy build artifact to VM (GCP Method)
         run: |
           gcloud compute scp web_build.tar.gz \
-            ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }}:/home/${{ env.USERNAME }}/deploy_artifacts/ \
+            ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }}:/home/${{ env.USERNAME }}/deploy_artifacts/web_build.tar.gz \
             --zone=${{ env.GCP_ZONE }} \
             --project=${{ env.GCP_PROJECT_ID }} \
             --tunnel-through-iap
