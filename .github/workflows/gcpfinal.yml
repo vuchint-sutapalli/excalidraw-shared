@@ -1,0 +1,179 @@
+name: Deploy Monorepo to Prod (GCP - Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Brief reason for this manual deployment (e.g., "WIF test", "Backend fix")'
+        required: false
+        default: "Manual deployment triggered"
+
+env:
+  # --- GCP/WIF CONFIGURATION (MUST BE UPDATED) ---
+  GCP_PROJECT_ID: "project-716b8f55-83a6-4bef-95a"
+  GCP_ZONE: "asia-south1-b"
+  GCP_VM_NAME: "instance-slategpt"
+  SA_EMAIL: "slategpt@project-716b8f55-83a6-4bef-95a.iam.gserviceaccount.com"
+  WIF_PROVIDER: "projects/445521739152/locations/global/workloadIdentityPools/slategpt-pool-id/providers/github"
+
+  # --- APPLICATION ENVIRONMENT VARIABLES ---
+  USERNAME: "vuchint_sutapalli" # This should be your GCP VM user
+  NEXT_PUBLIC_WS_URL: wss://prod.ws.slategpt.app
+  NEXT_PUBLIC_BACKEND_URL: https://prod.api.slategpt.app
+  # NOTE: Node version must match what is installed via provisioning
+  NODE_VERSION: 20
+
+jobs:
+  deploy:
+    name: Deploy Monorepo to Prod
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Checkout repository and Log Reason
+        uses: actions/checkout@v4
+        with:
+          # Optional: Log the reason for manual deployment
+          post-steps: |
+            echo "Deployment Reason: ${{ github.event.inputs.reason }}"
+
+      # --- START: BUILD STEPS (Local Runner) ---
+      - name: Setup pnpm and Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Next.js app
+        run: |
+          cd apps/excalidraw-client
+          # Use local env vars to correctly inject runtime URLs into the Next.js build
+          NEXT_PUBLIC_WS_URL=${{ env.NEXT_PUBLIC_WS_URL }} NEXT_PUBLIC_BACKEND_URL=${{ env.NEXT_PUBLIC_BACKEND_URL }} pnpm run build
+
+      - name: Package build folder
+        run: |
+          # Create a compressed artifact of the necessary build output
+          tar -czf web_build.tar.gz -C apps/excalidraw-client .next package.json next.config.mjs public
+      # --- END: BUILD STEPS ---
+      # 1. Authenticate using Workload Identity Federation (WIF)
+      - name: Authenticate to GCP (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.SA_EMAIL }}
+
+      # NEW STEP: Ensure deployment directories exist on the VM
+      - name: Prepare Remote Deployment Directory
+        run: |
+          gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --tunnel-through-iap \
+            --command="mkdir -p /home/${{ env.USERNAME }}/deploy_artifacts"
+
+      # 2. Copy build artifact to VM using gcloud scp
+      - name: Copy build artifact to VM (GCP Method)
+        run: |
+          gcloud compute scp web_build.tar.gz \
+            ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }}:/home/${{ env.USERNAME }}/deploy_artifacts/web_build.tar.gz \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --tunnel-through-iap
+
+      # 3. Deploy via SSH (gcloud Method)
+      - name: Deploy via SSH (GCP Method)
+        run: |
+          gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --tunnel-through-iap \
+            --command='
+              set -euo pipefail
+
+              # Define variables for the remote script
+              DEPLOY_HOME=/home/${{ env.USERNAME }}
+              REPO_DIR=${DEPLOY_HOME}/excalidraw-shared
+              ARTIFACT_DIR=${DEPLOY_HOME}/deploy_artifacts
+
+              echo "=== 🚀 Starting Deployment on $(hostname) ==="
+
+              # 1. Load NVM/Node Environment (Reliability Fix)
+              export NVM_DIR="${DEPLOY_HOME}/.nvm"
+              [ -s "${NVM_DIR}/nvm.sh" ] && \. "${NVM_DIR}/nvm.sh"
+              nvm use default # Use the default version installed by provisioning
+
+              # 2. Update Source Code and Install Dependencies
+              echo "1. Checking repository status in ${REPO_DIR}..."
+              cd ${DEPLOY_HOME}
+
+              if [ ! -d "${REPO_DIR}/.git" ]; then
+                echo "   ❌ Repository not found. Cloning now..."
+                mkdir -p ${REPO_DIR}
+                git clone https://github.com/vuchint-sutapalli/excalidraw-shared.git ${REPO_DIR}
+                cd ${REPO_DIR}
+                git checkout production
+              else
+                echo "   ✅ Repository found. Pulling latest changes..."
+                cd ${REPO_DIR}
+                git fetch origin production
+                git reset --hard origin/production
+              fi
+
+              echo "Current directory is: $(pwd)"
+              
+              echo "📦 Installing monorepo dependencies..."
+              pnpm install --frozen-lockfile
+
+              # 3. Extract and Configure Frontend
+              echo "📦 Cleaning old frontend build folder..."
+              # WARNING: Ensure this path is correct for your Next.js project structure
+              rm -rf apps/excalidraw-client/.next
+
+              echo "📦 Extracting new Next.js build..."
+              # Extract the local Runner's build files into the cloned repository structure
+              tar -xzf ${ARTIFACT_DIR}/web_build.tar.gz -C apps/excalidraw-client
+              echo "✅ Extraction complete!"
+
+              # 4. Database & Backend Build (Secret injection must be handled outside single quotes)
+              ' # END OF MAIN SCRIPT BLOCK 1 (Must break single quotes here)
+              
+              # --- SECRET INJECTION (Executed LOCALLY by Runner) ---
+              export DATABASE_URL='${{ secrets.DATABASE_URL }}'
+              
+              # --- RE-START MAIN SCRIPT BLOCK 2 (Sent to VM) ---
+              '
+              echo "🛠️ Running DB Migrations and Generating Client..."
+              # These must be run from the repo root ($REPO_DIR)
+              pnpm --filter @repo/db db:migrate
+              pnpm --filter @repo/db db:generate
+
+              echo "🏗️ Building lightweight backend apps..."
+              pnpm --filter apps/http-backend build
+              pnpm --filter apps/ws-backend build
+
+              echo "🔐 Writing runtime .env file (Only for packages that require it)..."
+              # Write the DATABASE_URL to a file for runtime consumption
+              echo "DATABASE_URL=$DATABASE_URL" > packages/db/.env
+
+              # 5. Restart PM2 processes
+              echo "🔁 Restarting PM2 processes..."
+
+              # Backend HTTP server
+              pm2 reload http-server || pm2 start dist/index.js --cwd apps/http-backend --name http-server
+              
+              # Backend WS server
+              pm2 reload ws-server || pm2 start dist/index.js --cwd apps/ws-backend --name ws-server
+              
+              # Frontend server (Using escaped quotes for the start command)
+              pm2 reload fe-server || pm2 start \"pnpm --dir apps/excalidraw-client start\" --name fe-server
+
+              pm2 save # Save process list for automatic reboot
+
+              echo "✅ Deployment completed successfully!"
+            '
