@@ -73,6 +73,15 @@ jobs:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.SA_EMAIL }}
 
+      # NEW STEP: Ensure deployment directories exist on the VM
+      - name: Prepare Remote Deployment Directory
+        run: |
+          gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --tunnel-through-iap \
+            --command="mkdir -p /home/${{ env.USERNAME }}/deploy_artifacts"
+
       # 2. Copy build artifact to VM using gcloud scp
       - name: Copy build artifact to VM (GCP Method)
         run: |
