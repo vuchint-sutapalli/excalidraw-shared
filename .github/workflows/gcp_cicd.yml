@@ -131,6 +131,8 @@ jobs:
                 git reset --hard origin/production
               fi
 
+              echo \"Current directory is: $(pwd)\"
+
               echo \"📦 Installing monorepo dependencies...\"
               pnpm install --frozen-lockfile
 
@@ -138,13 +140,19 @@ jobs:
               echo \"📦 Cleaning old frontend build folder...\"
               rm -rf apps/excalidraw-client/.next
 
+              echo \"Current directory is: $(pwd)\"
+
               echo \"📦 Extracting new Next.js build...\"
               tar -xzf \${ARTIFACT_DIR}/web_build.tar.gz -C apps/excalidraw-client
               echo \"✅ Extraction complete!\"
 
+              echo \"Current directory is: $(pwd)\"
+
               # 4. Database & Backend Build (Security Fix: Secrets Injection)
               # NOTE: Secrets must be available as environment variables for pnpm run
               export DATABASE_URL=\"${{ secrets.DATABASE_URL }}\"
+
+              echo \"Current directory is: $(pwd)\"
 
               echo \"🛠️ Running DB Migrations and Generating Client...\"
               pnpm --filter @repo/db db:migrate
