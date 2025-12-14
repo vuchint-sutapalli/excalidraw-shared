@@ -168,8 +168,10 @@ jobs:
 
               echo \"🏗️ Building lightweight backend apps...\"
               echo \"Current directory is: $(pwd)\"
-              pnpm --filter 'apps/http-backend' build
-              pnpm --filter 'apps/ws-backend' build
+              #pnpm --filter 'apps/http-backend' build
+              #pnpm --filter 'apps/ws-backend' build
+              cd apps/http-backend && pnpm run build && cd ../..
+              cd apps/ws-backend && pnpm run build && cd ../..
 
               echo \"🔐 Writing runtime .env file (Only for packages that require it)...\"
               # Ensure this .env file is only written if necessary for the runtime.
