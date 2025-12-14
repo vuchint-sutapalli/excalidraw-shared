@@ -113,10 +113,23 @@ jobs:
               nvm use default # Use the default version installed by provisioning
 
               # 2. Update Source Code and Install Dependencies
-              echo \"🔄 Pulling latest changes...\"
-              cd \${REPO_DIR} || { echo \"❌ Repo directory not found\"; exit 1; }
-              git fetch origin production
-              git reset --hard origin/production
+              echo \"1. Checking repository status in \${REPO_DIR}...\"
+              cd \${DEPLOY_HOME}
+
+              if [ ! -d \"\${REPO_DIR}/.git\" ]; then
+                echo \"   ❌ Repository not found. Cloning now...\"
+                mkdir -p \${REPO_DIR}
+
+                git clone https://github.com/vuchint-sutapalli/excalidraw-shared.git \${REPO_DIR}
+                cd \${REPO_DIR}
+                git checkout production
+
+              else
+                echo \"   ✅ Repository found. Pulling latest changes...\"
+                cd \${REPO_DIR}
+                git fetch origin production
+                git reset --hard origin/production
+              fi
 
               echo \"📦 Installing monorepo dependencies...\"
               pnpm install --frozen-lockfile
