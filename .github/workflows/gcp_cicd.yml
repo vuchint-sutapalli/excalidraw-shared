@@ -1,4 +1,4 @@
-name: Test Deploy Monorepo to Prod (GCP - Manual)
+name: Deploy Monorepo to Prod (GCP - Manual)
 
 # -----------------------------------------------------------------------
 # CHANGE: Switched from 'push' to 'workflow_dispatch' for manual trigger
