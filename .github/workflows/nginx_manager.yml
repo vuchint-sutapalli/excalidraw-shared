@@ -1,0 +1,124 @@
+name: ⚙️ Nginx Configuration Manager (WIF)
+
+# Manual trigger with an option to select the action (setup or uninstall)
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Select the Nginx action to perform"
+        required: true
+        type: choice
+        default: "setup"
+        options:
+          - setup
+          - uninstall
+      reason:
+        description: "Reason for running Nginx management"
+        required: false
+        default: "Applying or removing reverse proxy configuration"
+
+# --- GCP/WIF CONFIGURATION (Using your provided variables) ---
+env:
+  GCP_PROJECT_ID: "project-716b8f55-83a6-4bef-95a"
+  GCP_ZONE: "asia-south1-b"
+  GCP_VM_NAME: "instance-slategpt"
+  USERNAME: "vuchint_sutapalli"
+  SA_EMAIL: "slategpt@project-716b8f55-83a6-4bef-95a.iam.gserviceaccount.com"
+  WIF_PROVIDER: "projects/445521739152/locations/global/workloadIdentityPools/slategpt-pool-id/providers/github"
+
+jobs:
+  manage_nginx:
+    name: Manage Nginx Reverse Proxy
+    runs-on: ubuntu-latest
+
+    # CRITICAL: Grant permission to the runner to fetch the OIDC token
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: 🔐 Authenticate to GCP (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.SA_EMAIL }}
+
+      - name: 🚀 Run Nginx Action (${{ github.event.inputs.action }})
+        # Note: Using the YAML pipe (|) allows the shell script to be treated as a single block.
+        run: |
+          ACTION=${{ github.event.inputs.action }}
+
+          # Define the core gcloud SSH command string once
+          GCP_SSH_COMMAND="gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --tunnel-through-iap \
+            --command"
+
+          # --- Nginx SETUP Logic ---
+          if [ "$ACTION" == "setup" ]; then
+            echo "--- Executing Nginx Setup Script ---"
+            
+            SETUP_SCRIPT="
+              set -euo pipefail
+              CONFIG_FILE=\"/etc/nginx/sites-available/slategpt.conf\"
+              SITE_ENABLED=\"/etc/nginx/sites-enabled/slategpt.conf\"
+              DEFAULT_CONF=\"/etc/nginx/sites-enabled/default\"
+
+              echo \"--- 1. Installing Nginx and preparing configuration ---\"
+              # Use DEBIAN_FRONTEND=noninteractive for non-interactive apt install
+              sudo DEBIAN_FRONTEND=noninteractive apt update -y
+              sudo DEBIAN_FRONTEND=noninteractive apt install -y nginx
+
+              echo \"--- 2. Creating slategpt.conf reverse proxy configuration ---\"
+              
+              # Define the Nginx config as a single shell variable with escaped newlines (\n)
+              # This avoids YAML/shell indentation conflicts completely.
+              NGINX_CONF=\"server {\n  listen 80;\n  server_name slategpt.app www.slategpt.app prod.api.slategpt.app prod.ws.slategpt.app;\n\n  # Common Proxy Headers\n  proxy_set_header Host \$host;\n  proxy_set_header X-Real-IP \$remote_addr;\n  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;\n  proxy_set_header X-Forwarded-Proto \$scheme;\n\n  # FE Client (3000)\n  if (\$host = \\\"slategpt.app\\\" or \$host = \\\"www.slategpt.app\\\") {\n    proxy_pass http://localhost:3000;\n  }\n\n  # HTTP API Server (3001)\n  if (\$host = \\\"prod.api.slategpt.app\\\") {\n    proxy_pass http://localhost:3001;\n  }\n\n  # WS Server (3002)\n  if (\$host = \\\"prod.ws.slategpt.app\\\") {\n    proxy_pass http://localhost:3002;\n    proxy_http_version 1.1;\n    proxy_set_header Upgrade \$http_upgrade;\n    proxy_set_header Connection \\\"upgrade\\\";\n  }\n}\"
+              
+              # Write the single-line variable to the config file
+              echo \"\$NGINX_CONF\" | sudo tee \$CONFIG_FILE > /dev/null
+
+              echo \"--- 3. Enabling site and reloading Nginx ---\"
+              if [ -f \$DEFAULT_CONF ]; then
+                  sudo rm -f \$DEFAULT_CONF
+              fi
+              sudo ln -sf \$CONFIG_FILE \$SITE_ENABLED
+
+              sudo nginx -t && sudo systemctl reload nginx
+              echo \"✅ Nginx Setup Complete!\"
+            "
+            # Execute the setup script on the VM
+            $GCP_SSH_COMMAND "$SETUP_SCRIPT"
+
+          # --- Nginx UNINSTALL Logic ---
+          elif [ "$ACTION" == "uninstall" ]; then
+            echo "--- Executing Nginx Uninstall Script ---"
+            
+            UNINSTALL_SCRIPT="
+              set -euo pipefail
+              echo \"--- Stopping and Removing Nginx ---\"
+              
+              # Stop and disable the service
+              sudo systemctl stop nginx || true
+              sudo systemctl disable nginx || true
+              
+              # Remove the package and all configuration files (purge)
+              sudo DEBIAN_FRONTEND=noninteractive apt-get purge -y nginx nginx-common nginx-full nginx-core || true
+              
+              # Remove residual configuration/log directories
+              sudo rm -rf /etc/nginx /var/log/nginx /var/www/html || true
+              
+              # Remove unused dependencies
+              sudo apt-get autoremove -y
+              sudo apt-get clean
+
+              echo \"✅ Nginx Uninstall Complete! VM is now clean.\"
+            "
+            # Execute the uninstall script on the VM
+            $GCP_SSH_COMMAND "$UNINSTALL_SCRIPT"
+
+          else
+            echo "Error: Invalid action selected. Must be 'setup' or 'uninstall'."
+            exit 1
+          fi
