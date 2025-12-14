@@ -1,8 +1,5 @@
-name: Deploy Monorepo to Prod (GCP - Manual)
+name: muilti job workflow- Deploy Monorepo to Prod (GCP - Manual)
 
-# -----------------------------------------------------------------------
-# CHANGE: Switched from 'push' to 'workflow_dispatch' for manual trigger
-# -----------------------------------------------------------------------
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +9,7 @@ on:
         default: "Manual deployment triggered"
 
 env:
-  # --- GCP/WIF CONFIGURATION (MUST BE UPDATED) ---
+  # --- GCP/WIF CONFIGURATION ---
   GCP_PROJECT_ID: "project-716b8f55-83a6-4bef-95a"
   GCP_ZONE: "asia-south1-b"
   GCP_VM_NAME: "instance-slategpt"
@@ -20,37 +17,28 @@ env:
   WIF_PROVIDER: "projects/445521739152/locations/global/workloadIdentityPools/slategpt-pool-id/providers/github"
 
   # --- APPLICATION ENVIRONMENT VARIABLES ---
-  USERNAME: "vuchint_sutapalli" # This should be your GCP VM user
+  USERNAME: "vuchint_sutapalli"
   NEXT_PUBLIC_WS_URL: wss://prod.ws.slategpt.app
   NEXT_PUBLIC_BACKEND_URL: https://prod.api.slategpt.app
+  NODE_VERSION: 20
+  ARTIFACT_NAME: web-deployment-artifact # Define artifact name once
 
 jobs:
-  deploy:
-    name: Deploy Monorepo to Prod
+  ## 1. BUILD AND UPLOAD ARTIFACT (Runs on a fresh Runner instance)
+  build_and_package:
+    name: 📦 Build Frontend Artifact
     runs-on: ubuntu-latest
-
     permissions:
       contents: "read"
-      id-token: "write"
 
     steps:
-      - name: Checkout repository and Log Reason
+      - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          # Optional: Log the reason for manual deployment
-          post-steps: |
-            echo "Deployment Reason: ${{ github.event.inputs.reason }}"
 
-      # --- START: BUILD STEPS (No Change) ---
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
-
-      - name: Setup Node
+      - name: Setup pnpm and Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
 
       - name: Install dependencies
@@ -62,19 +50,39 @@ jobs:
           NEXT_PUBLIC_WS_URL=${{ env.NEXT_PUBLIC_WS_URL }} NEXT_PUBLIC_BACKEND_URL=${{ env.NEXT_PUBLIC_BACKEND_URL }} pnpm run build
 
       - name: Package build folder
-        run: |
-          cd apps/excalidraw-client
-          tar -czf ../../web_build.tar.gz .next package.json next.config.mjs public
-      # --- END: BUILD STEPS ---
-      # 1. Authenticate using Workload Identity Federation (WIF)
+        run: tar -czf ${{ env.ARTIFACT_NAME }}.tar.gz -C apps/excalidraw-client .next package.json next.config.mjs public
+
+      - name: Upload Artifact to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_NAME }}.tar.gz
+          retention-days: 1 # Artifact is temporary
+
+  ## 2. PREPARE REMOTE VM AND TRANSFER ARTIFACT
+  transfer_and_prep:
+    name: 🚚 Transfer Artifact to VM
+    needs: build_and_package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write" # Need WIF for gcloud commands
+
+    steps:
+      - name: Download Artifact from GitHub
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ./
+
       - name: Authenticate to GCP (WIF)
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.SA_EMAIL }}
 
-      # NEW STEP: Ensure deployment directories exist on the VM
       - name: Prepare Remote Deployment Directory
+        # Ensure the remote directory exists before we transfer the file
         run: |
           gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
             --zone=${{ env.GCP_ZONE }} \
@@ -82,18 +90,36 @@ jobs:
             --tunnel-through-iap \
             --command="mkdir -p /home/${{ env.USERNAME }}/deploy_artifacts"
 
-      # 2. Copy build artifact to VM using gcloud scp
-      - name: Copy build artifact to VM (GCP Method)
+      - name: Copy Build Artifact to VM (GCP Method)
         run: |
-          gcloud compute scp web_build.tar.gz \
-            ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }}:/home/${{ env.USERNAME }}/deploy_artifacts/web_build.tar.gz \
+          gcloud compute scp ${{ env.ARTIFACT_NAME }}.tar.gz \
+            ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }}:/home/${{ env.USERNAME }}/deploy_artifacts/${{ env.ARTIFACT_NAME }}.tar.gz \
             --zone=${{ env.GCP_ZONE }} \
             --project=${{ env.GCP_PROJECT_ID }} \
             --tunnel-through-iap
 
-      # 3. Deploy via SSH (gcloud Method)
-      - name: Deploy via SSH (GCP Method)
+  ## 3. EXECUTE DEPLOYMENT SCRIPT ON VM
+  remote_deploy:
+    name: 🚀 Execute Remote Deployment
+    needs: transfer_and_prep
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Authenticate to GCP (WIF)
+        # Re-authenticate, as this is a new job on a potentially new runner machine
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.SA_EMAIL }}
+
+      - name: Execute Remote Deployment Script
         run: |
+          # Define Artifact path on the VM
+          ARTIFACT_PATH=/home/${{ env.USERNAME }}/deploy_artifacts/${{ env.ARTIFACT_NAME }}.tar.gz
+
           gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
             --zone=${{ env.GCP_ZONE }} \
             --project=${{ env.GCP_PROJECT_ID }} \
@@ -101,45 +127,33 @@ jobs:
             --command="
               set -euo pipefail
 
-              echo \"Current directory beforr declaring variables is: $(pwd)\"
-
+              # Define variables for the remote script
               DEPLOY_HOME=/home/${{ env.USERNAME }}
               REPO_DIR=\${DEPLOY_HOME}/excalidraw-shared
               ARTIFACT_DIR=\${DEPLOY_HOME}/deploy_artifacts
 
-              echo \"Current directory after declaring variables is: $(pwd)\"
-
               echo \"=== 🚀 Starting Deployment on \$(hostname) ===\"
 
-              # 1. Load NVM/Node Environment (Reliability Fix)
+              # 1. Load NVM/Node Environment
               export NVM_DIR=\"\${DEPLOY_HOME}/.nvm\"
               [ -s \"\${NVM_DIR}/nvm.sh\" ] && \. \"\${NVM_DIR}/nvm.sh\"
-              nvm use default # Use the default version installed by provisioning
-
-              echo \"Current directory after nvm is: $(pwd)\"
+              nvm use default
 
               # 2. Update Source Code and Install Dependencies
               echo \"1. Checking repository status in \${REPO_DIR}...\"
               cd \${DEPLOY_HOME}
 
-              echo \"Current directory before cloning is: $(pwd)\"
-
               if [ ! -d \"\${REPO_DIR}/.git\" ]; then
                 echo \"   ❌ Repository not found. Cloning now...\"
-                mkdir -p \${REPO_DIR}
-
                 git clone https://github.com/vuchint-sutapalli/excalidraw-shared.git \${REPO_DIR}
                 cd \${REPO_DIR}
                 git checkout production
-
               else
                 echo \"   ✅ Repository found. Pulling latest changes...\"
                 cd \${REPO_DIR}
                 git fetch origin production
                 git reset --hard origin/production
               fi
-
-              echo \"Current directory is: $(pwd)\"
 
               echo \"📦 Installing monorepo dependencies...\"
               pnpm install --frozen-lockfile
@@ -148,44 +162,33 @@ jobs:
               echo \"📦 Cleaning old frontend build folder...\"
               rm -rf apps/excalidraw-client/.next
 
-              echo \"Current directory is: $(pwd)\"
-
               echo \"📦 Extracting new Next.js build...\"
-              tar -xzf \${ARTIFACT_DIR}/web_build.tar.gz -C apps/excalidraw-client
+              # CRITICAL: Use the ARTIFACT_PATH defined at the start of this step
+              tar -xzf \${ARTIFACT_DIR}/${{ env.ARTIFACT_NAME }}.tar.gz -C apps/excalidraw-client
               echo \"✅ Extraction complete!\"
 
-              echo \"Current directory is: $(pwd)\"
-
-              # 4. Database & Backend Build (Security Fix: Secrets Injection)
-              # NOTE: Secrets must be available as environment variables for pnpm run
+              # 4. Database & Backend Build (Secret Injection)
               export DATABASE_URL=\"${{ secrets.DATABASE_URL }}\"
-
-              echo \"Current directory is: $(pwd)\"
 
               echo \"🛠️ Running DB Migrations and Generating Client...\"
               pnpm --filter @repo/db db:migrate
               pnpm --filter @repo/db db:generate
 
               echo \"🏗️ Building lightweight backend apps...\"
-              echo \"Current directory is: $(pwd)\"
-              #pnpm --filter 'apps/http-backend' build
-              #pnpm --filter 'apps/ws-backend' build
               cd apps/http-backend && pnpm run build && cd ../..
               cd apps/ws-backend && pnpm run build && cd ../..
 
-              echo \"🔐 Writing runtime .env file (Only for packages that require it)...\"
-              # Ensure this .env file is only written if necessary for the runtime.
+              echo \"🔐 Writing runtime .env file...\"
               echo \"DATABASE_URL=\${DATABASE_URL}\" > packages/db/.env
 
               # 5. Restart PM2 processes
               echo \"🔁 Restarting PM2 processes...\"
 
-              # Use the 'start' command for the PM2 script to ensure pnpm is in path
               pm2 reload http-server || pm2 start dist/index.js --cwd apps/http-backend --name http-server
               pm2 reload ws-server || pm2 start dist/index.js --cwd apps/ws-backend --name ws-server
               pm2 reload fe-server || pm2 start \"pnpm --dir apps/excalidraw-client start\" --name fe-server
 
-              pm2 save # Save process list for automatic reboot
+              pm2 save
 
               echo \"✅ Deployment completed successfully!\"
             "
