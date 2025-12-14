@@ -1,0 +1,56 @@
+name: ⚙️ Configure Nginx Reverse Proxy
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Nginx action"
+        required: true
+        type: choice
+        default: setup
+        options: [setup, uninstall]
+
+env:
+  GCP_PROJECT_ID: project-716b8f55-83a6-4bef-95a
+  GCP_ZONE: asia-south1-b
+  GCP_VM_NAME: instance-slategpt
+  USERNAME: vuchint_sutapalli
+  SA_EMAIL: slategpt@project-716b8f55-83a6-4bef-95a.iam.gserviceaccount.com
+  WIF_PROVIDER: projects/445521739152/locations/global/workloadIdentityPools/slategpt-pool-id/providers/github
+  REPO_DIR: /home/vuchint_sutapalli/excalidraw-shared
+
+jobs:
+  nginx:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: 🔐 Authenticate to GCP (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.SA_EMAIL }}
+
+      - name: 🚀 Run Nginx Action
+        run: |
+          ACTION=${{ github.event.inputs.action }}
+
+          SSH_CMD="gcloud compute ssh ${{ env.USERNAME }}@${{ env.GCP_VM_NAME }} \
+            --zone=${{ env.GCP_ZONE }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --tunnel-through-iap \
+            --command"
+
+          $SSH_CMD "
+            set -e
+            cd ${{ env.REPO_DIR }}
+            git pull --ff-only
+
+            if [ \"$ACTION\" = \"setup\" ]; then
+              bash nginx/setup.sh
+            else
+              bash nginx/uninstall.sh
+            fi
+          "
