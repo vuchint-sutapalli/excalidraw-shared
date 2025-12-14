@@ -98,6 +98,25 @@ jobs:
               else
                 echo \"   PM2 is already installed.\"
               fi
-              
+
+
+              echo "--- 📦 Checking for Git Utility ---"
+
+              if ! command -v git &> /dev/null; then
+                echo "   ❌ Git not found. Installing now..."
+                # Use sudo for system-level package installation
+                sudo apt update -y && sudo apt upgrade -y
+                sudo apt install -y git
+                echo "   ✅ Git installed successfully."
+
+                sudo apt autoremove -y
+                sudo apt clean
+              else
+                echo "   ✅ Git is already installed: $(git --version)"
+                sudo apt update -y && sudo apt upgrade -y
+                sudo apt autoremove -y
+                sudo apt clean
+              fi
+
               echo \"✅ VM Setup Complete. Node version: \$(node -v)\"
             "
