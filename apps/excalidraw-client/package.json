@@ -16,9 +16,9 @@
 		"fabric": "^6.7.1",
 		"konva": "^10.0.2",
 		"lucide-react": "^0.544.0",
-		"next": "15.5.3",
-		"react": "19.1.0",
-		"react-dom": "19.1.0",
+		"next": "15.5.9",
+		"react": "19.2.3",
+		"react-dom": "19.2.3",
 		"react-konva": "^19.0.10"
 	},
 	"devDependencies": {
@@ -30,8 +30,8 @@
 		"autoprefixer": "^10.4.21",
 		"eslint": "^9",
 		"eslint-config-next": "15.5.3",
+		"rimraf": "^6.0.1",
 		"tailwindcss": "^4",
-		"typescript": "^5",
-		"rimraf": "^6.0.1"
+		"typescript": "^5"
 	}
 }
