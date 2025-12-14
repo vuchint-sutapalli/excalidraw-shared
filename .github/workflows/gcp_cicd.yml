@@ -151,7 +151,7 @@ jobs:
               # Use the 'start' command for the PM2 script to ensure pnpm is in path
               pm2 reload http-server || pm2 start dist/index.js --cwd apps/http-backend --name http-server
               pm2 reload ws-server || pm2 start dist/index.js --cwd apps/ws-backend --name ws-server
-              pm2 reload fe-server || pm2 start "pnpm --dir apps/excalidraw-client start" --name fe-server
+              pm2 reload fe-server || pm2 start \"pnpm --dir apps/excalidraw-client start\" --name fe-server
 
               pm2 save # Save process list for automatic reboot
 
