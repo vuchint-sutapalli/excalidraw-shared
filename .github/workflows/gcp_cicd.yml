@@ -35,18 +35,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # --- CRITICAL FIX: Combined Node and PNPM Setup ---
-      - name: Setup Node and pnpm
+      # --- START: LOCAL BUILD STEPS ---
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
-          # CRITICAL: This parameter instructs setup-node to install pnpm
-          # and ensure it's on the PATH for subsequent steps.
-          cache-dependency-path: "pnpm-lock.yaml"
-          check-latest: true # Ensures we get a functional version
-          registry-url: "https://registry.npmjs.org"
-      # --- END CRITICAL FIX ---
 
       - name: Install dependencies
         run: pnpm install
