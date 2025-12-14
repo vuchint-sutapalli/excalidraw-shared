@@ -151,6 +151,7 @@ jobs:
               pnpm --filter @repo/db db:generate
 
               echo \"🏗️ Building lightweight backend apps...\"
+              echo \"Current directory is: $(pwd)\"
               pnpm --filter 'apps/http-backend' build
               pnpm --filter 'apps/ws-backend' build
 
