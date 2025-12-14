@@ -1,4 +1,4 @@
-name: Deploy Monorepo to Prod (GCP - Manual)
+name: Test Deploy Monorepo to Prod (GCP - Manual)
 
 # -----------------------------------------------------------------------
 # CHANGE: Switched from 'push' to 'workflow_dispatch' for manual trigger
@@ -101,9 +101,13 @@ jobs:
             --command="
               set -euo pipefail
 
+              echo \"Current directory beforr declaring variables is: $(pwd)\"
+
               DEPLOY_HOME=/home/${{ env.USERNAME }}
               REPO_DIR=\${DEPLOY_HOME}/excalidraw-shared
               ARTIFACT_DIR=\${DEPLOY_HOME}/deploy_artifacts
+
+              echo \"Current directory after declaring variables is: $(pwd)\"
 
               echo \"=== 🚀 Starting Deployment on \$(hostname) ===\"
 
@@ -112,9 +116,13 @@ jobs:
               [ -s \"\${NVM_DIR}/nvm.sh\" ] && \. \"\${NVM_DIR}/nvm.sh\"
               nvm use default # Use the default version installed by provisioning
 
+              echo \"Current directory after nvm is: $(pwd)\"
+
               # 2. Update Source Code and Install Dependencies
               echo \"1. Checking repository status in \${REPO_DIR}...\"
               cd \${DEPLOY_HOME}
+
+              echo \"Current directory before cloning is: $(pwd)\"
 
               if [ ! -d \"\${REPO_DIR}/.git\" ]; then
                 echo \"   ❌ Repository not found. Cloning now...\"
