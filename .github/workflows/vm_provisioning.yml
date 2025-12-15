@@ -17,7 +17,7 @@ env:
   GCP_PROJECT_ID: "project-716b8f55-83a6-4bef-95a"
   GCP_ZONE: "asia-south1-b"
   GCP_VM_NAME: "instance-slategpt"
-  USERNAME: "vuchint_sutapalli"
+  USERNAME: "vuchint_sutapalli_gmail_com"
   SA_EMAIL: "slategpt@project-716b8f55-83a6-4bef-95a.iam.gserviceaccount.com"
   WIF_PROVIDER: "projects/445521739152/locations/global/workloadIdentityPools/slategpt-pool-id/providers/github"
 
