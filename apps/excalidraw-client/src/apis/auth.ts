@@ -4,13 +4,13 @@
 
 // When running on the server, we need an absolute URL.
 // When running on the client, a relative URL is sufficient.
-// const IS_SERVER = typeof window === "undefined";
-// export const API_BASE_URL = IS_SERVER
-// 	? process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001"
-// 	: "/api";
+const IS_SERVER = typeof window === "undefined";
+export const API_BASE_URL = IS_SERVER
+	? process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+	: "/api";
 
-export const API_BASE_URL =
-	process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+// export const API_BASE_URL =
+// 	process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
 
 /**
  * A wrapper around the native `fetch` function that automatically includes
